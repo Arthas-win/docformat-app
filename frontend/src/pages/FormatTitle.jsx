@@ -1,7 +1,11 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+
 import { paperInputStyles } from "../styles/styles";
 
 function FormatTitle() {
+  const { register, handleSubmit } = useForm();
+
   const [logoUrl, setLogoUrl] = useState(null);
 
   const handleLogoUpload = (e) => {
@@ -11,6 +15,25 @@ function FormatTitle() {
       setLogoUrl(imageUrl);
     }
   };
+
+  async function handleForm(data) {
+    try {
+      if (!data) throw new Error("something wrong with data");
+      const req = await fetch("http://localhost:80/api/title/generate/", {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!req.ok) throw new Error("error posting data");
+      const result = await req.json();
+      console.log(result);
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
 
   return (
     <div className="flex flex-col items-center w-full min-h-screen bg-gray-100 p-4">
@@ -23,23 +46,29 @@ function FormatTitle() {
           className="absolute inset-0 w-full h-full object-contain opacity-50 z-0 pointer-events-none"
         /> */}
 
-        <form className="w-full h-full relative z-10">
+        <form
+          className="w-full h-full relative z-10"
+          onSubmit={handleSubmit((data) => handleForm(data))}
+        >
           {/* ВЕРХНЯ ЧАСТИНА */}
           <input
             type="text"
             placeholder="university"
             className={`${paperInputStyles} top-[12%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase`}
+            {...register("university")}
           />
 
           <input
             type="text"
             placeholder="faculty"
             className={`${paperInputStyles} top-[18%] right-[10%] text-right w-[40%]`}
+            {...register("faculty")}
           />
           <input
             type="text"
             placeholder="department"
             className={`${paperInputStyles} top-[21%] right-[10%] text-right w-[40%]`}
+            {...register("department")}
           />
 
           {/* --- ЛОГОТИП --- */}
@@ -53,6 +82,7 @@ function FormatTitle() {
                 accept="image/*"
                 className="hidden"
                 onChange={handleLogoUpload}
+                {...register("logo")}
               />
               {logoUrl ? (
                 <img
@@ -72,13 +102,13 @@ function FormatTitle() {
               )}
             </label>
           </div>
-          {/* -------------------------------- */}
 
           {/* ЦЕНТРАЛЬНА ЧАСТИНА */}
           <select
             className={`${paperInputStyles} top-[35%] left-1/2 -translate-x-1/2 text-center w-[50%] font-bold cursor-pointer appearance-none`}
             style={{ textAlignLast: "center" }}
             defaultValue=""
+            {...register("workType")}
           >
             <option value="" disabled className="text-gray-400">
               {" work_type "}
@@ -95,6 +125,7 @@ function FormatTitle() {
               type="text"
               placeholder="discipline"
               className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[60%] font-semibold placeholder-gray-400/70"
+              {...register("discipline")}
             />
           </div>
 
@@ -104,6 +135,7 @@ function FormatTitle() {
               type="text"
               placeholder="topic"
               className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[70%] font-bold placeholder-gray-400/70"
+              {...register("topic")}
             />
           </div>
 
@@ -113,6 +145,7 @@ function FormatTitle() {
               type="text"
               placeholder="variant"
               className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[30%] font-semibold placeholder-gray-400/70"
+              {...register("variant")}
             />
           </div>
 
@@ -126,6 +159,7 @@ function FormatTitle() {
                   type="text"
                   placeholder="group"
                   className="bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-16 text-center font-semibold"
+                  {...register("group")}
                 />
               </div>
             </div>
@@ -133,6 +167,7 @@ function FormatTitle() {
               type="text"
               placeholder="{{student_full_name}}"
               className="bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-full font-semibold ml-25 -mt-1"
+              {...register("studentFullName")}
             />
 
             <div className="mt-6 font-bold">Прийняв(-ла):</div>
@@ -141,17 +176,20 @@ function FormatTitle() {
                 type="text"
                 placeholder="teacher_degree"
                 className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none flex-1 min-w-25 text-sm"
+                {...register("teacherDegree")}
               />
               <input
                 type="text"
                 placeholder="teacher_role"
                 className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none flex-1 min-w-25 text-sm"
+                {...register("teacherRole")}
               />
             </div>
             <input
               type="text"
               placeholder="teacher_name"
               className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-full mt-1 font-semibold"
+              {...register("teacherName")}
             />
             <span className="text-[10px] text-center w-full block text-gray-500">
               (ініціали, прізвище)
@@ -163,6 +201,7 @@ function FormatTitle() {
             type="text"
             placeholder="city_and_year"
             className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold`}
+            {...register("CityAndName")}
           />
         </form>
       </div>
@@ -171,7 +210,11 @@ function FormatTitle() {
       <div className="mt-6 flex gap-4 bg-white p-4 rounded shadow z-20">
         <div className="flex items-center gap-2">
           <label htmlFor="language">Мова:</label>
-          <select id="language" className="border rounded p-1 bg-white">
+          <select
+            id="language"
+            className="border rounded p-1 bg-white"
+            {...register("language")}
+          >
             <option value="ukr">Українська</option>
             <option value="eng">Англійська</option>
           </select>
@@ -182,6 +225,7 @@ function FormatTitle() {
             type="checkbox"
             id="pageNumbers"
             className="w-5 h-5 accent-blue-500"
+            {...register("pageNumbers")}
           />
         </div>
       </div>
