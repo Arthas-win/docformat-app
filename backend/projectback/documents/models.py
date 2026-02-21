@@ -1,3 +1,5 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -45,3 +47,25 @@ class FormatPreset(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class TitleDocumentJob(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        RUNNING = "RUNNING", "Running"
+        DONE = "DONE", "Done"
+        FAILED = "FAILED", "Failed"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    job_type = models.CharField(max_length=16, default="TITLE")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.PENDING)
+    progress = models.PositiveSmallIntegerField(default=0)
+    input_data = models.JSONField(default=dict, blank=True)
+    output_docx = models.FileField(upload_to="title_jobs/output/", null=True, blank=True)
+    output_pdf = models.FileField(upload_to="title_jobs/output/", null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    error_text = models.TextField(blank=True)
+
+    def __str__(self) -> str:
+        return f"TITLE {self.id}"
