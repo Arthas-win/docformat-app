@@ -1,0 +1,40 @@
+from django.urls import path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+from .views import (
+    DepartmentListView,
+    DisciplineListView,
+    FacultyListView,
+    FormatRunView,
+    FormatUploadView,
+    JobDetailView,
+    JobDiffView,
+    JobDownloadView,
+    PresetListView,
+    RegisterView,
+    ReviewsView,
+    StatsView,
+    TeacherListView,
+    TitleGenerateView,
+    UniversityListView,
+)
+
+urlpatterns = [
+    path("auth/register", RegisterView.as_view(), name="auth-register"),
+    path("auth/jwt/create", TokenObtainPairView.as_view(), name="jwt-create"),
+    path("auth/jwt/refresh", TokenRefreshView.as_view(), name="jwt-refresh"),
+    path("stats", StatsView.as_view(), name="stats"),
+    path("landing/reviews", ReviewsView.as_view(), name="landing-reviews"),
+    path("universities", UniversityListView.as_view(), name="universities"),
+    path("faculties", FacultyListView.as_view(), name="faculties"),
+    path("departments", DepartmentListView.as_view(), name="departments"),
+    path("teachers", TeacherListView.as_view(), name="teachers"),
+    path("disciplines", DisciplineListView.as_view(), name="disciplines"),
+    path("title/generate", TitleGenerateView.as_view(), name="title-generate"),
+    path("format/upload", FormatUploadView.as_view(), name="format-upload"),
+    path("format/run", FormatRunView.as_view(), name="format-run"),
+    path("presets", PresetListView.as_view(), name="presets"),
+    path("jobs/<int:job_id>", JobDetailView.as_view(), name="job-detail"),
+    path("jobs/<int:job_id>/diff", JobDiffView.as_view(), name="job-diff"),
+    path("jobs/<int:job_id>/download", JobDownloadView.as_view(), name="job-download"),
+]
