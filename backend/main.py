@@ -1,2 +1,0 @@
-print('DOCX') 
-# TODO: GADADA RABOTAY
