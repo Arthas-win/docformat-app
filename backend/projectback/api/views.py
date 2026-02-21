@@ -1,11 +1,18 @@
+import os
+
+from django.conf import settings
+from django.core.files import File
+from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
+from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from documents.models import DocumentJob, FormatPreset
-from templates.models import Department, Discipline, Faculty, Teacher, University
+from documents.models import DocumentJob, FormatPreset, TitleDocumentJob
+from documents.services import render_title_docx
+from templates.models import Department, Discipline, Faculty, Teacher, TitleTemplate, University, WorkType
 
 from .serializers import (
     DepartmentSerializer,
@@ -15,6 +22,8 @@ from .serializers import (
     FormatPresetSerializer,
     RegisterSerializer,
     TeacherSerializer,
+    TitleGenerateSerializer,
+    TitleJobStatusSerializer,
     UniversitySerializer,
 )
 
@@ -122,15 +131,95 @@ class TitleGenerateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        job = DocumentJob.objects.create(
-            user=request.user if request.user.is_authenticated else None,
-            job_type=DocumentJob.JobType.TITLE,
-            status=DocumentJob.Status.QUEUED,
-            progress=0,
-            current_stage="queued",
-            meta_json=_normalize_payload(request.data),
+        serializer = TitleGenerateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        logo_file = data.pop("logo", None)
+        input_data = dict(data)
+
+        job = TitleDocumentJob.objects.create(
+            status=TitleDocumentJob.Status.RUNNING,
+            progress=5,
+            input_data=input_data,
         )
-        return Response({"job_id": job.id}, status=status.HTTP_201_CREATED)
+
+        logo_path = None
+        if logo_file:
+            logo_name = f"title_jobs/logos/{job.id}_{logo_file.name}"
+            saved_path = default_storage.save(logo_name, logo_file)
+            logo_path = default_storage.path(saved_path)
+
+        try:
+            discipline_name = data.get("discipline") or data.get("discipline_custom", "")
+            teacher_rank = " ".join(
+                value for value in [data.get("teacher_role", ""), data.get("teacher_degree", "")] if value
+            )
+
+            language = data["language"]
+            template_filename = data.get("template_filename", "")
+            template = (
+                TitleTemplate.objects.filter(
+                    department__name=data["department"], language=language, is_active=True
+                )
+                .order_by("-created_at")
+                .first()
+            )
+            if not template and not template_filename:
+                raise FileNotFoundError("No active template for the selected department/language.")
+            template_path = ""
+            if template and template.docx_template_file:
+                template_path = template.docx_template_file.path
+            elif template and template.template_filename:
+                template_path = os.path.join(
+                    str(settings.TITLE_TEMPLATE_DIR), template.template_filename
+                )
+            elif template_filename:
+                template_path = os.path.join(str(settings.TITLE_TEMPLATE_DIR), template_filename)
+            if not template_path:
+                raise FileNotFoundError("Template file is not configured.")
+
+            student_label = f"{data['student_full_name']}, {data['student_group']}"
+            teacher_label = " ".join(value for value in [data["teacher"], teacher_rank] if value)
+            city_year_parts = [data.get("city", ""), data.get("year_or_semester", "")]
+            city_year = " ".join(part for part in city_year_parts if part).strip()
+
+            context = {
+                "unuvers": data["university"],
+                "institut": data.get("faculty", ""),
+                "cafedra": data["department"],
+                "type_robota": data["work_type"],
+                "name_dusp": discipline_name,
+                "topic": data.get("topic", ""),
+                "var_numb": data.get("variant", ""),
+                "student_name_andgroup": student_label,
+                "tea_name_and_rank": teacher_label,
+                "city_and_year": city_year,
+            }
+
+            output_path = render_title_docx(
+                template_path,
+                context,
+                logo_path=logo_path,
+                output_name=f"{job.id}.docx",
+            )
+
+            with open(output_path, "rb") as docx_file:
+                job.output_docx.save(os.path.basename(output_path), File(docx_file), save=False)
+            job.status = TitleDocumentJob.Status.DONE
+            job.progress = 100
+            job.finished_at = timezone.now()
+            job.save(update_fields=["output_docx", "status", "progress", "finished_at"])
+        except Exception as exc:
+            job.status = TitleDocumentJob.Status.FAILED
+            job.error_text = str(exc)
+            job.finished_at = timezone.now()
+            job.save(update_fields=["status", "error_text", "finished_at"])
+
+        response = {"job_id": str(job.id)}
+        if job.output_docx:
+            response["file_url"] = job.output_docx.url
+        return Response(response, status=status.HTTP_201_CREATED)
 
 
 class FormatUploadView(APIView):
@@ -191,6 +280,18 @@ class JobDetailView(APIView):
         return Response(payload)
 
 
+class TitleJobDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, job_id):
+        try:
+            job = TitleDocumentJob.objects.get(id=job_id)
+        except TitleDocumentJob.DoesNotExist:
+            raise Http404("job not found")
+        serializer = TitleJobStatusSerializer(job)
+        return Response(serializer.data)
+
+
 class JobDiffView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -211,6 +312,25 @@ class JobDownloadView(APIView):
         except DocumentJob.DoesNotExist:
             raise Http404("job not found")
         format_value = request.query_params.get("format")
+        file_field = None
+        if format_value == "docx":
+            file_field = job.output_docx
+        elif format_value == "pdf":
+            file_field = job.output_pdf
+        if not file_field:
+            raise Http404("file not available")
+        return FileResponse(file_field.open("rb"), as_attachment=True)
+
+
+class TitleJobDownloadView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, job_id):
+        try:
+            job = TitleDocumentJob.objects.get(id=job_id)
+        except TitleDocumentJob.DoesNotExist:
+            raise Http404("job not found")
+        format_value = request.query_params.get("format", "docx")
         file_field = None
         if format_value == "docx":
             file_field = job.output_docx
