@@ -179,22 +179,36 @@ class TitleGenerateView(APIView):
             if not template_path:
                 raise FileNotFoundError("Template file is not configured.")
 
-            student_label = f"{data['student_full_name']}, {data['student_group']}"
+            student_label = " ".join(
+                value for value in [data.get("student_group", ""), data["student_full_name"]] if value
+            )
             teacher_label = " ".join(value for value in [data["teacher"], teacher_rank] if value)
             city_year_parts = [data.get("city", ""), data.get("year_or_semester", "")]
             city_year = " ".join(part for part in city_year_parts if part).strip()
 
             context = {
+                "university": data["university"],
+                "faculty": data.get("faculty", ""),
+                "department": data["department"],
+                "work_type": data["work_type"],
+                "discipline": discipline_name,
+                "topic": data.get("topic", ""),
+                "variant": data.get("variant", ""),
+                "student_group": data.get("student_group", ""),
+                "student_full_name": data["student_full_name"],
+                "teacher_degree": data.get("teacher_degree", ""),
+                "teacher_role": data.get("teacher_role", ""),
+                "teacher": data["teacher"],
+                "city_and_year": city_year,
+                # Backward-compatible keys
                 "unuvers": data["university"],
                 "institut": data.get("faculty", ""),
                 "cafedra": data["department"],
                 "type_robota": data["work_type"],
                 "name_dusp": discipline_name,
-                "topic": data.get("topic", ""),
                 "var_numb": data.get("variant", ""),
                 "student_name_andgroup": student_label,
                 "tea_name_and_rank": teacher_label,
-                "city_and_year": city_year,
             }
 
             output_path = render_title_docx(
