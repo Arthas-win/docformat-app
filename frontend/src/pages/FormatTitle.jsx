@@ -19,13 +19,16 @@ function FormatTitle() {
   async function handleForm(data) {
     try {
       if (!data) throw new Error("something wrong with data");
-      const req = await fetch("http://localhost:80/api/title/generate/", {
-        method: "POST",
-        body: JSON.stringify(data),
-        headers: {
-          "Content-Type": "application/json",
+      const req = await fetch(
+        "https://docformat-backend.fly.dev/api/title/generate/",
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!req.ok) throw new Error("error posting data");
       const result = await req.json();
