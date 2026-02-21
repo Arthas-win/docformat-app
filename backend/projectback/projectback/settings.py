@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     "api.apps.ApiConfig",
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
 ]
 
 MIDDLEWARE = [
@@ -203,12 +204,20 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-    ]
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 if DEBUG:
     REST_FRAMEWORK['DEFAULT_RENDERER_CLASSES'].append(
         'rest_framework.renderers.BrowsableAPIRenderer'
     )
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "DocFormat API",
+    "DESCRIPTION": "API for title generation and document formatting.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+}
     
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
