@@ -39,10 +39,12 @@ function FormatTitle() {
   }
 
   return (
-    <div className="flex flex-col items-center w-full min-h-screen bg-gray-100 p-4">
-      <h1 className="font-semibold text-3xl mb-6">Створити титулку</h1>
+    <div className="flex flex-col items-center w-full min-h-screen bg-gray-100 p-2 sm:p-4">
+      <h1 className="font-semibold text-2xl sm:text-3xl mb-4 sm:mb-6 text-center">
+        Створити титулку
+      </h1>
 
-      <div className="relative w-full max-w-200 aspect-[1/1.414] bg-white shadow-2xl overflow-hidden text-sm sm:text-base">
+      <div className="relative w-full max-w-105 sm:max-w-150 md:max-w-175 aspect-[1/1.414] bg-white shadow-2xl overflow-hidden text-xs sm:text-sm md:text-base rounded-lg transition-all">
         {/* <img
           src=""
           alt="Title page background"
@@ -52,31 +54,32 @@ function FormatTitle() {
         <form
           className="w-full h-full relative z-10"
           onSubmit={handleSubmit((data) => handleForm(data))}
+          autoComplete="off"
         >
           {/* ВЕРХНЯ ЧАСТИНА */}
           <input
             type="text"
             placeholder="university"
-            className={`${paperInputStyles} top-[12%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase`}
+            className={`${paperInputStyles} top-[10%] sm:top-[12%] left-1/2 -translate-x-1/2 text-center w-[90%] sm:w-[80%] font-bold uppercase text-xs sm:text-base`}
             {...register("university")}
           />
 
           <input
             type="text"
             placeholder="faculty"
-            className={`${paperInputStyles} top-[18%] right-[10%] text-right w-[40%]`}
+            className={`${paperInputStyles} top-[16%] sm:top-[18%] right-[5%] sm:right-[10%] text-right w-[60%] sm:w-[40%]`}
             {...register("faculty")}
           />
           <input
             type="text"
             placeholder="department"
-            className={`${paperInputStyles} top-[21%] right-[10%] text-right w-[40%]`}
+            className={`${paperInputStyles} top-[20%] sm:top-[21%] right-[5%] sm:right-[10%] text-right w-[60%] sm:w-[40%]`}
             {...register("department")}
           />
 
           {/* --- ЛОГОТИП --- */}
           <div
-            className="absolute top-[28%] left-1/2 -translate-x-1/2 w-24 h-24 border-2 border-dashed border-gray-300 rounded bg-white/50 hover:border-blue-500 hover:bg-white/80 transition-all group overflow-hidden"
+            className="absolute top-[18%] sm:top-[28%] left-1/2 -translate-x-1/2 w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 aspect-square border-2 border-dashed border-gray-300 rounded bg-white/50 hover:border-blue-500 hover:bg-white/80 transition-all group overflow-hidden"
             title="Натисніть, щоб завантажити логотип"
           >
             <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-1">
@@ -108,7 +111,7 @@ function FormatTitle() {
 
           {/* ЦЕНТРАЛЬНА ЧАСТИНА */}
           <select
-            className={`${paperInputStyles} top-[35%] left-1/2 -translate-x-1/2 text-center w-[50%] font-bold cursor-pointer appearance-none`}
+            className={`${paperInputStyles} top-[38%] sm:top-[35%] left-1/2 -translate-x-1/2 text-center w-[70%] sm:w-[50%] font-bold cursor-pointer appearance-none text-xs sm:text-base`}
             style={{ textAlignLast: "center" }}
             defaultValue=""
             {...register("workType")}
@@ -122,38 +125,38 @@ function FormatTitle() {
             <option value="bachelor">Бакалаврська робота</option>
           </select>
 
-          <div className="absolute top-[39%] left-1/2 -translate-x-1/2 w-[70%] text-center">
+          <div className="absolute top-[37%] sm:top-[39%] left-1/2 -translate-x-1/2 w-[90%] sm:w-[70%] text-center">
             <span className="mr-2">з дисципліни</span>
             <input
               type="text"
               placeholder="discipline"
-              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[60%] font-semibold placeholder-gray-400/70"
+              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[80%] sm:w-[60%] font-semibold placeholder-gray-400/70 text-xs sm:text-base"
               {...register("discipline")}
             />
           </div>
 
-          <div className="absolute top-[43%] left-1/2 -translate-x-1/2 w-[80%] text-center">
+          <div className="absolute top-[41%] sm:top-[43%] left-1/2 -translate-x-1/2 w-[95%] sm:w-[80%] text-center">
             <span className="mr-2">на тему:</span>
             <input
               type="text"
               placeholder="topic"
-              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[70%] font-bold placeholder-gray-400/70"
+              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[90%] sm:w-[70%] font-bold placeholder-gray-400/70 text-xs sm:text-base"
               {...register("topic")}
             />
           </div>
 
-          <div className="absolute top-[47%] left-1/2 -translate-x-1/2 w-[40%] text-center">
+          <div className="absolute top-[45%] sm:top-[47%] left-1/2 -translate-x-1/2 w-[60%] sm:w-[40%] text-center">
             <span className="mr-2">Варіант</span>
             <input
               type="text"
               placeholder="variant"
-              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[30%] font-semibold placeholder-gray-400/70"
+              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-[50%] sm:w-[30%] font-semibold placeholder-gray-400/70 text-xs sm:text-base"
               {...register("variant")}
             />
           </div>
 
           {/* НИЖНЯ ПРАВА ЧАСТИНА */}
-          <div className="absolute top-[65%] right-[15%] w-[45%] text-left flex flex-col gap-1 pl-4">
+          <div className="absolute top-[60%] sm:top-[65%] right-[2%] sm:right-[15%] w-[80%] sm:w-[45%] text-left flex flex-col gap-1 pl-2 sm:pl-4">
             <div className="flex items-baseline gap-2">
               <span className="font-bold whitespace-nowrap">Виконав(-ла):</span>
               <div className="flex-1 flex gap-1">
@@ -161,7 +164,7 @@ function FormatTitle() {
                 <input
                   type="text"
                   placeholder="group"
-                  className="bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-16 text-center font-semibold"
+                  className="bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-12 sm:w-16 text-center font-semibold text-xs sm:text-base"
                   {...register("group")}
                 />
               </div>
@@ -169,32 +172,32 @@ function FormatTitle() {
             <input
               type="text"
               placeholder="{{student_full_name}}"
-              className="bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-full font-semibold ml-25 -mt-1"
+              className="bg-transparent border-b border-gray-300 focus:border-blue-500 focus:outline-none w-full font-semibold ml-0 sm:ml-25 -mt-1 text-xs sm:text-base"
               {...register("studentFullName")}
             />
 
-            <div className="mt-6 font-bold">Прийняв(-ла):</div>
-            <div className="flex items-baseline gap-2 flex-wrap">
+            <div className="mt-4 sm:mt-6 font-bold">Прийняв(-ла):</div>
+            <div className="flex items-baseline gap-1 sm:gap-2 flex-wrap">
               <input
                 type="text"
                 placeholder="teacher_degree"
-                className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none flex-1 min-w-25 text-sm"
+                className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none flex-1 min-w-20 sm:min-w-25 text-xs sm:text-sm"
                 {...register("teacherDegree")}
               />
               <input
                 type="text"
                 placeholder="teacher_role"
-                className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none flex-1 min-w-25 text-sm"
+                className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none flex-1 min-w-20 sm:min-w-25 text-xs sm:text-sm"
                 {...register("teacherRole")}
               />
             </div>
             <input
               type="text"
               placeholder="teacher_name"
-              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-full mt-1 font-semibold"
+              className="bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 focus:outline-none w-full mt-1 font-semibold text-xs sm:text-base"
               {...register("teacherName")}
             />
-            <span className="text-[10px] text-center w-full block text-gray-500">
+            <span className="text-[9px] sm:text-[10px] text-center w-full block text-gray-500">
               (ініціали, прізвище)
             </span>
           </div>
@@ -203,31 +206,35 @@ function FormatTitle() {
           <input
             type="text"
             placeholder="city_and_year"
-            className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold`}
+            className={`${paperInputStyles} bottom-[3%] sm:bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[60%] sm:w-[40%] font-semibold text-xs sm:text-base`}
             {...register("CityAndName")}
           />
         </form>
       </div>
 
       {/* Налаштування поза аркушем */}
-      <div className="mt-6 flex gap-4 bg-white p-4 rounded shadow z-20">
-        <div className="flex items-center gap-2">
-          <label htmlFor="language">Мова:</label>
+      <div className="mt-4 sm:mt-6 flex flex-col sm:flex-row gap-2 sm:gap-4 bg-white p-2 sm:p-4 rounded shadow z-20 w-full max-w-105 sm:max-w-150 md:max-w-175">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <label htmlFor="language" className="text-xs sm:text-base">
+            Мова:
+          </label>
           <select
             id="language"
-            className="border rounded p-1 bg-white"
+            className="border rounded p-1 bg-white text-xs sm:text-base"
             {...register("language")}
           >
             <option value="ukr">Українська</option>
             <option value="eng">Англійська</option>
           </select>
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="pageNumbers">Нумерація сторінок</label>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <label htmlFor="pageNumbers" className="text-xs sm:text-base">
+            Нумерація сторінок
+          </label>
           <input
             type="checkbox"
             id="pageNumbers"
-            className="w-5 h-5 accent-blue-500"
+            className="w-4 h-4 sm:w-5 sm:h-5 accent-blue-500"
             {...register("pageNumbers")}
           />
         </div>
