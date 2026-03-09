@@ -1,14 +1,16 @@
+import { NavLink } from "react-router";
 import Logo from "./Logo";
-import NavButton from "./NavButton";
 
 function Header() {
   return (
     <header>
       <nav>
-        <ul className="flex flex-row justify-between items-center text-xl px-6 py-3">
+        <ul className="flex flex-row justify-between items-center text-xl px-3 py-1 border border-stone-400/50 shadow">
           <Logo />
-          <NavButton>Home</NavButton>
-          <NavButton to="/format/title">Fromat Title</NavButton>
+          <NavLink to="/" className="text-md md:text-xl">
+            Home
+          </NavLink>
+          <NavLink to="/format/title">Fromat Title</NavLink>
         </ul>
       </nav>
     </header>
