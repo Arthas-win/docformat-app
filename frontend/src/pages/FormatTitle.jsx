@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { paperInputStyles } from "../styles/styles";
+import Nulp_logo_ukr from "../assets/Nulp_logo_ukr.jpg"
 
 function FormatTitle() {
   const { register, handleSubmit, watch } = useForm({
@@ -44,6 +45,21 @@ function FormatTitle() {
     setLogoFile(file);
     setLogoUrl(URL.createObjectURL(file));
   };
+
+  const normalizedUniversity = formValues.university.trim().toLowerCase();
+
+  const universityLogo =
+    normalizedUniversity === "львівська політехніка"
+      ? Nulp_logo_ukr
+      : null;
+
+
+  const universityText = {
+    "Львівська політехніка":
+      "МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ\nНАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ «ЛЬВІВСЬКА ПОЛІТЕХНІКА»",
+  };
+
+  const universityTitle = universityText[formValues.university];
 
   async function handleForm(data) {
     try {
@@ -100,13 +116,17 @@ function FormatTitle() {
                   <h2 className="text-lg font-semibold text-slate-900">
                     Основні дані
                   </h2>
-                  <div className="mt-4 space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Університет"
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-blue-500"
+                  <div className="mt-4 space-y-3">           
+                    <select
+                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-blue-500 bg-white"
                       {...register("university")}
-                    />
+                    >
+                      <option value="">Університет</option>
+                      <option value="Львівська політехніка">Львівська політехніка</option>
+                      <option value="Львіський національний університет ім. Івана Франка">Львіський національний університет ім. Івана Франка</option>
+                      <option value="...">Незабаром буде більше :3</option>
+                    </select>
+
                     <select
                       className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-blue-500 bg-white"
                       {...register("faculty")}
@@ -149,10 +169,10 @@ function FormatTitle() {
                       {...register("workType")}
                     >
                       <option value="">Тип роботи</option>
-                      <option value="lab">Лабораторна робота</option>
-                      <option value="term">Курсова робота</option>
-                      <option value="report">Реферат</option>
-                      <option value="bachelor">Бакалаврська робота</option>
+                      <option value="до Лабораторної роботи">Лабораторна робота</option>
+                      <option value="до Курсової робота">Курсова робота</option>
+                      <option value="до Реферату">Реферат</option>
+                      <option value="до Бакалаврської роботи">Бакалаврська робота</option>
                     </select>
 
                     <input
@@ -240,31 +260,6 @@ function FormatTitle() {
                         onChange={handleLogoUpload}
                       />
                     </label>
-
-                    <div className="flex items-center justify-between">
-                      <label htmlFor="language" className="text-sm text-slate-700">
-                        Мова
-                      </label>
-                      <select
-                        id="language"
-                        className="rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
-                        {...register("language")}
-                      >
-                        <option value="ukr">Українська</option>
-                        <option value="eng">Англійська</option>
-                      </select>
-                    </div>
-
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-blue-500"
-                        {...register("pageNumbers")}
-                      />
-                      <span className="text-sm text-slate-700">
-                        Нумерація сторінок
-                      </span>
-                    </label>
                   </div>
                 </div>
 
@@ -287,20 +282,19 @@ function FormatTitle() {
 
               <div className="flex justify-center overflow-auto rounded-2xl bg-slate-100 p-4">
                 <div className="relative w-full max-w-[820px] aspect-[1/1.414] bg-white shadow-xl overflow-hidden text-sm sm:text-base">
-                  <input
-                    type="text"
-                    readOnly
-                    value={formValues.university || ""}
-                    placeholder="university"
-                    className={`${paperInputStyles} top-[12%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase`}
-                  />
+
+                  <div
+                    className={`${paperInputStyles} top-[5%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase whitespace-pre-line`}
+                  >
+                    {universityTitle ? universityTitle : formValues.university}
+                  </div>
 
                   <input
                     type="text"
                     readOnly
                     value={formValues.faculty || ""}
                     placeholder="faculty"
-                    className={`${paperInputStyles} top-[18%] right-[10%] text-right w-[40%]`}
+                    className={`${paperInputStyles} top-[10%] right-[10%] text-right w-[40%]`}
                   />
 
                   <input
@@ -308,14 +302,19 @@ function FormatTitle() {
                     readOnly
                     value={formValues.department || ""}
                     placeholder="department"
-                    className={`${paperInputStyles} top-[21%] right-[10%] text-right w-[40%]`}
+                    className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%]`}
                   />
 
-                  <div className="absolute top-[28%] left-1/2 -translate-x-1/2 w-24 h-24 border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
-                    {logoUrl ? (
+                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-55 h-55 border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
+                    {universityLogo ? (
                       <img
-                        src={logoUrl}
-                        alt="Logo preview"
+                        src={universityLogo}
+                        className="w-full h-full object-contain"
+                      />
+                    ) : logoUrl ? (
+                      <img
+                        src={universityLogo}
+                        alt="logo"
                         className="w-full h-full object-contain"
                       />
                     ) : (
@@ -325,22 +324,23 @@ function FormatTitle() {
                     )}
                   </div>
 
+
                   <input
                     type="text"
                     readOnly
                     value={formValues.workType || ""}
                     placeholder="work_type"
-                    className={`${paperInputStyles} top-[35%] left-1/2 -translate-x-1/2 text-center w-[50%] font-bold`}
+                    className={`${paperInputStyles} top-[38%] left-1/2 -translate-x-1/2 text-center w-[50%] font-bold`}
                   />
 
-                  <div className="absolute top-[39%] left-1/2 -translate-x-1/2 w-[70%] text-center">
+                  <div className="absolute top-[41%] left-1/2 -translate-x-1/2 w-[70%] text-center">
                     <span className="mr-2">з дисципліни</span>
                     <span className="font-semibold">
                       {formValues.discipline || "discipline"}
                     </span>
                   </div>
 
-                  <div className="absolute top-[43%] left-1/2 -translate-x-1/2 w-[80%] text-center">
+                  <div className="absolute top-[44%] left-1/2 -translate-x-1/2 w-[80%] text-center">
                     <span className="mr-2">на тему:</span>
                     <span className="font-bold">
                       {formValues.topic || "topic"}
@@ -348,13 +348,13 @@ function FormatTitle() {
                   </div>
 
                   <div className="absolute top-[47%] left-1/2 -translate-x-1/2 w-[40%] text-center">
-                    <span className="mr-2">Варіант</span>
+                    <span className="mr-2 font-semibold">Варіант №</span>
                     <span className="font-semibold">
                       {formValues.variant || "variant"}
                     </span>
                   </div>
 
-                  <div className="absolute top-[65%] right-[15%] w-[45%] text-left flex flex-col gap-1 pl-4">
+                  <div className="absolute top-[65%] right-[0%] w-[33%] text-left flex flex-col gap-1 pl-4">
                     <div className="font-bold">Виконав(-ла):</div>
                     <div>
                       студент(-ка) групи {formValues.group || "group"}
