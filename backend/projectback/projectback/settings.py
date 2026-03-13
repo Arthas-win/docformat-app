@@ -14,6 +14,7 @@ from datetime import timedelta
 from pathlib import Path
 import os
 
+import dj_database_url
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,6 +31,7 @@ SECRET_KEY = os.getenv("SECRET_KEY", "change-me")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "False").lower() in {"1", "true", "yes", "on"}
+IS_FLY = bool(os.getenv("FLY_APP_NAME"))
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -61,6 +63,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
 
     "corsheaders.middleware.CorsMiddleware",      # <- тут, вище Common
@@ -72,7 +75,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-if DEBUG:
+if DEBUG and os.getenv("ENABLE_DEBUG_TOOLBAR", "").lower() in {"1", "true", "yes", "on"}:
     MIDDLEWARE += ["debug_toolbar.middleware.DebugToolbarMiddleware"]
     
 CORS_ALLOWED_ORIGINS = [
@@ -108,7 +111,16 @@ WSGI_APPLICATION = 'projectback.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-if os.getenv("DB_ENGINE") == "postgres" or os.getenv("DB_HOST"):
+if os.getenv("DATABASE_URL"):
+    database_url = os.getenv("DATABASE_URL", "")
+    DATABASES = {
+        "default": dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            ssl_require="sslmode=disable" not in database_url,
+        )
+    }
+elif os.getenv("DB_ENGINE") == "postgres" or os.getenv("DB_HOST"):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -162,11 +174,14 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    BASE_DIR / 'test_app/static',
+    static_path
+    for static_path in [BASE_DIR / "test_app/static"]
+    if static_path.exists()
 ]
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = '/media/'
@@ -270,3 +285,9 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+
+if IS_FLY and not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True

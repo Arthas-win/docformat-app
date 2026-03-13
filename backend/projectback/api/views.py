@@ -1,5 +1,7 @@
 import os
 
+from pathlib import Path
+
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import default_storage
@@ -29,9 +31,52 @@ from .serializers import (
 
 
 def _normalize_payload(data):
-    if hasattr(data, "dict"):
-        return data.dict()
-    return data
+    if hasattr(data, "copy"):
+        normalized = data.copy()
+    else:
+        normalized = dict(data)
+
+    alias_map = {
+        "workType": "work_type",
+        "disciplineCustom": "discipline_custom",
+        "studentFullName": "student_full_name",
+        "studentGender": "student_gender",
+        "yearOrSemester": "year_or_semester",
+        "cityAndYear": "city_and_year",
+        "teacherName": "teacher",
+        "teacherDegree": "teacher_degree",
+        "teacherGender": "teacher_gender",
+        "teacherRole": "teacher_role",
+        "pageNumbers": "page_numbers",
+        "templateFilename": "template_filename",
+        "group": "student_group",
+    }
+    for source_key, target_key in alias_map.items():
+        if source_key in normalized and target_key not in normalized:
+            normalized[target_key] = normalized[source_key]
+    return normalized
+
+
+def _resolve_template_path(template, template_filename):
+    candidate_paths = []
+
+    if template and template.docx_template_file:
+        candidate_paths.append(Path(template.docx_template_file.path))
+    if template and template.template_filename:
+        candidate_paths.append(Path(settings.TITLE_TEMPLATE_DIR) / template.template_filename)
+    if template_filename:
+        candidate_paths.append(Path(settings.TITLE_TEMPLATE_DIR) / template_filename)
+
+    fallback_dir = Path(settings.BASE_DIR) / "appback" / "template" / "appback"
+    if template and template.template_filename:
+        candidate_paths.append(fallback_dir / template.template_filename)
+    if template_filename:
+        candidate_paths.append(fallback_dir / template_filename)
+
+    for path in candidate_paths:
+        if path and path.exists():
+            return str(path)
+    return ""
 
 
 class StatsView(APIView):
@@ -131,7 +176,7 @@ class TitleGenerateView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        serializer = TitleGenerateSerializer(data=request.data)
+        serializer = TitleGenerateSerializer(data=_normalize_payload(request.data))
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
@@ -167,15 +212,7 @@ class TitleGenerateView(APIView):
             )
             if not template and not template_filename:
                 raise FileNotFoundError("No active template for the selected department/language.")
-            template_path = ""
-            if template and template.docx_template_file:
-                template_path = template.docx_template_file.path
-            elif template and template.template_filename:
-                template_path = os.path.join(
-                    str(settings.TITLE_TEMPLATE_DIR), template.template_filename
-                )
-            elif template_filename:
-                template_path = os.path.join(str(settings.TITLE_TEMPLATE_DIR), template_filename)
+            template_path = _resolve_template_path(template, template_filename)
             if not template_path:
                 raise FileNotFoundError("Template file is not configured.")
 
@@ -183,8 +220,10 @@ class TitleGenerateView(APIView):
                 value for value in [data.get("student_group", ""), data["student_full_name"]] if value
             )
             teacher_label = " ".join(value for value in [data["teacher"], teacher_rank] if value)
-            city_year_parts = [data.get("city", ""), data.get("year_or_semester", "")]
-            city_year = " ".join(part for part in city_year_parts if part).strip()
+            city_year = data.get("city_and_year", "").strip()
+            if not city_year:
+                city_year_parts = [data.get("city", ""), data.get("year_or_semester", "")]
+                city_year = " ".join(part for part in city_year_parts if part).strip()
 
             context = {
                 "university": data["university"],
