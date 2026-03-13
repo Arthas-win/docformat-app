@@ -59,6 +59,7 @@ def _normalize_payload(data):
 
 def _resolve_template_path(template, template_filename):
     candidate_paths = []
+    default_template_path = Path(settings.BASE_DIR) / "appback" / "template" / "appback" / "template.docx"
 
     if template and template.docx_template_file:
         candidate_paths.append(Path(template.docx_template_file.path))
@@ -72,6 +73,7 @@ def _resolve_template_path(template, template_filename):
         candidate_paths.append(fallback_dir / template.template_filename)
     if template_filename:
         candidate_paths.append(fallback_dir / template_filename)
+    candidate_paths.append(default_template_path)
 
     for path in candidate_paths:
         if path and path.exists():
@@ -210,8 +212,6 @@ class TitleGenerateView(APIView):
                 .order_by("-created_at")
                 .first()
             )
-            if not template and not template_filename:
-                raise FileNotFoundError("No active template for the selected department/language.")
             template_path = _resolve_template_path(template, template_filename)
             if not template_path:
                 raise FileNotFoundError("Template file is not configured.")
