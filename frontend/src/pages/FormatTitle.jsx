@@ -3,6 +3,11 @@ import { useForm } from "react-hook-form";
 import { paperInputStyles } from "../styles/styles";
 import Nulp_logo_ukr from "../assets/Nulp_logo_ukr.jpg"
 
+const API_BASE_URL = "https://docformat-backend.fly.dev";
+const TITLE_GENERATE_URL = `${API_BASE_URL}/api/title/generate/`;
+const TITLE_JOB_POLL_INTERVAL_MS = 1000;
+const TITLE_JOB_POLL_ATTEMPTS = 20;
+
 function FormatTitle() {
   const { register, handleSubmit, watch } = useForm({
     defaultValues: {
@@ -27,6 +32,8 @@ function FormatTitle() {
   const [logoFile, setLogoFile] = useState(null);
   const [logoUrl, setLogoUrl] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   const formValues = watch();
 
@@ -61,9 +68,54 @@ function FormatTitle() {
 
   const universityTitle = universityText[formValues.university];
 
+  const pollTitleJob = async (jobId) => {
+    for (let attempt = 0; attempt < TITLE_JOB_POLL_ATTEMPTS; attempt += 1) {
+      const response = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/`);
+      if (!response.ok) {
+        throw new Error("Не вдалося перевірити статус генерації");
+      }
+
+      const job = await response.json();
+      if (job.status === "DONE") {
+        return job;
+      }
+      if (job.status === "FAILED") {
+        throw new Error(job.error_text || "Генерація документа завершилась з помилкою");
+      }
+
+      await new Promise((resolve) => {
+        window.setTimeout(resolve, TITLE_JOB_POLL_INTERVAL_MS);
+      });
+    }
+
+    throw new Error("Генерація триває занадто довго. Спробуй ще раз.");
+  };
+
+  const downloadTitleFile = async (jobId) => {
+    const downloadResponse = await fetch(
+      `${API_BASE_URL}/api/jobs/${jobId}/download/`
+    );
+
+    if (!downloadResponse.ok) {
+      throw new Error("Не вдалося скачати готовий файл");
+    }
+
+    const blob = await downloadResponse.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = `title-${jobId}.docx`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(objectUrl);
+  };
+
   async function handleForm(data) {
     try {
       setLoading(true);
+      setSubmitError("");
+      setSubmitMessage("Надсилаю дані на генерацію...");
 
       const formData = new FormData();
 
@@ -75,22 +127,30 @@ function FormatTitle() {
         formData.append("logo", logoFile);
       }
 
-      const req = await fetch(
-        "https://docformat-backend.fly.dev/api/title/generate/",
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+      const req = await fetch(TITLE_GENERATE_URL, {
+        method: "POST",
+        body: formData,
+      });
 
       if (!req.ok) {
         throw new Error("Помилка при відправці форми");
       }
 
       const result = await req.json();
-      console.log("result:", result);
+      setSubmitMessage("Документ генерується...");
+
+      if (result.file_url) {
+        await downloadTitleFile(result.job_id);
+        setSubmitMessage("Файл успішно згенеровано і скачано.");
+        return;
+      }
+
+      await pollTitleJob(result.job_id);
+      setSubmitMessage("Документ готовий. Завантажую файл...");
+      await downloadTitleFile(result.job_id);
+      setSubmitMessage("Файл успішно згенеровано і скачано.");
     } catch (error) {
-      console.error(error.message);
+      setSubmitError(error.message || "Не вдалося згенерувати титулку");
     } finally {
       setLoading(false);
     }
@@ -269,6 +329,12 @@ function FormatTitle() {
                 >
                   {loading ? "Генерується..." : "Згенерувати титулку"}
                 </button>
+                {submitMessage ? (
+                  <p className="text-sm text-slate-600">{submitMessage}</p>
+                ) : null}
+                {submitError ? (
+                  <p className="text-sm text-red-600">{submitError}</p>
+                ) : null}
               </div>
             </div>
 
