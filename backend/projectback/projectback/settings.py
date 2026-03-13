@@ -83,6 +83,12 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://docformat-app.vercel.app",
+]
+CORS_ALLOWED_ORIGINS += [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip() and origin.strip() not in CORS_ALLOWED_ORIGINS
 ]
 CORS_ALLOW_CREDENTIALS = True
 ROOT_URLCONF = "projectback.urls"
