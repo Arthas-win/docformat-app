@@ -116,7 +116,7 @@ function FormatTitle() {
                   <h2 className="text-lg font-semibold text-slate-900">
                     Основні дані
                   </h2>
-                  <div className="mt-4 space-y-3">           
+                  <div className="mt-4 space-y-3">
                     <select
                       className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-blue-500 bg-white"
                       {...register("university")}
@@ -165,14 +165,13 @@ function FormatTitle() {
                   </h2>
                   <div className="mt-4 space-y-3">
                     <select
-                      className="w-full rounded-xl border border-slate-300 px-4 py-2.5 outline-none focus:border-blue-500 bg-white"
+                      className="w-full rounded-xl border border-slate-300 px-4  py-2.5 outline-none focus:border-blue-500 bg-white"
                       {...register("workType")}
                     >
                       <option value="">Тип роботи</option>
-                      <option value="до Лабораторної роботи">Лабораторна робота</option>
-                      <option value="до Курсової робота">Курсова робота</option>
-                      <option value="до Реферату">Реферат</option>
-                      <option value="до Бакалаврської роботи">Бакалаврська робота</option>
+                      <option value="до лабораторної роботи">Лабораторна робота</option>
+                      <option value="до курсової робота">Курсова робота</option>
+                      <option value="до бакалаврської роботи">Бакалаврська робота</option>
                     </select>
 
                     <input
@@ -305,7 +304,7 @@ function FormatTitle() {
                     className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%]`}
                   />
 
-                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-55 h-55 border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
+                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-65 h-65 border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
                     {universityLogo ? (
                       <img
                         src={universityLogo}
@@ -323,31 +322,34 @@ function FormatTitle() {
                       </div>
                     )}
                   </div>
-
+        
+                  <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[40%] text-center">
+                    <span className="mr-2 text-sm font-bold">З В І Т</span>
+                  </div>
 
                   <input
                     type="text"
                     readOnly
                     value={formValues.workType || ""}
                     placeholder="work_type"
-                    className={`${paperInputStyles} top-[38%] left-1/2 -translate-x-1/2 text-center w-[50%] font-bold`}
+                    className={`${paperInputStyles} top-[45%] left-1/2 -translate-x-1/2 text-center w-[50%]`}
                   />
 
-                  <div className="absolute top-[41%] left-1/2 -translate-x-1/2 w-[70%] text-center">
-                    <span className="mr-2">з дисципліни</span>
-                    <span className="font-semibold">
+                  <div className="absolute top-[48%] left-1/2 -translate-x-1/2 w-[70%] text-center">
+                    <span className="mr-2 font-bold">з дисципліни</span>
+                    <span>
                       {formValues.discipline || "discipline"}
                     </span>
                   </div>
 
-                  <div className="absolute top-[44%] left-1/2 -translate-x-1/2 w-[80%] text-center">
-                    <span className="mr-2">на тему:</span>
-                    <span className="font-bold">
+                  <div className="absolute top-[51%] left-1/2 -translate-x-1/2 w-[80%] text-center">
+                    <span className="mr-2 font-bold">на тему:</span>
+                    <span>
                       {formValues.topic || "topic"}
                     </span>
                   </div>
 
-                  <div className="absolute top-[47%] left-1/2 -translate-x-1/2 w-[40%] text-center">
+                  <div className="absolute top-[54%] left-1/2 -translate-x-1/2 w-[40%] text-center">
                     <span className="mr-2 font-semibold">Варіант №</span>
                     <span className="font-semibold">
                       {formValues.variant || "variant"}
