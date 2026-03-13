@@ -1,0 +1,50 @@
+[
+  {
+    "model": "templates.university",
+    "pk": 1,
+    "fields": {
+      "name": "Sample University"
+    }
+  },
+  {
+    "model": "templates.department",
+    "pk": 1,
+    "fields": {
+      "name": "Sample Department",
+      "university": 1,
+      "faculty": null
+    }
+  },
+  {
+    "model": "templates.teacher",
+    "pk": 1,
+    "fields": {
+      "full_name": "Sample Teacher",
+      "degree": "PhD",
+      "gender": "male",
+      "position": "Professor",
+      "department": 1
+    }
+  },
+  {
+    "model": "templates.worktype",
+    "pk": 1,
+    "fields": {
+      "name": "Lab"
+    }
+  },
+  {
+    "model": "templates.worktype",
+    "pk": 2,
+    "fields": {
+      "name": "Course"
+    }
+  },
+  {
+    "model": "templates.worktype",
+    "pk": 3,
+    "fields": {
+      "name": "Report"
+    }
+  }
+]

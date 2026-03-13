@@ -68,7 +68,10 @@ class TitleTemplate(models.Model):
     )
     language = models.CharField(max_length=32, default="ua")
     version = models.CharField(max_length=64, blank=True)
-    docx_template_file = models.FileField(upload_to="title_templates/")
+    template_filename = models.CharField(max_length=255, blank=True)
+    docx_template_file = models.FileField(
+        upload_to="title_templates/", blank=True, null=True
+    )
     is_active = models.BooleanField(default=True)
     rules_json = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

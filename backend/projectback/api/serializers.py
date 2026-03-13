@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from accounts.models import UserProfile
-from documents.models import DocumentJob, FormatPreset
-from templates.models import Department, Discipline, Faculty, Teacher, University
+from documents.models import DocumentJob, FormatPreset, TitleDocumentJob
+from templates.models import Department, Discipline, Faculty, Teacher, University, WorkType
 
 
 User = get_user_model()
@@ -57,6 +57,47 @@ class DocumentJobSerializer(serializers.ModelSerializer):
             "created_at",
             "finished_at",
         ]
+
+
+class TitleGenerateSerializer(serializers.Serializer):
+    university = serializers.CharField(max_length=255)
+    faculty = serializers.CharField(required=False, allow_blank=True)
+    department = serializers.CharField(max_length=255)
+    work_type = serializers.CharField(max_length=255)
+    discipline = serializers.CharField(required=False, allow_blank=True)
+    discipline_custom = serializers.CharField(required=False, allow_blank=True)
+    variant = serializers.CharField(required=False, allow_blank=True)
+    topic = serializers.CharField(required=False, allow_blank=True)
+
+    student_full_name = serializers.CharField(max_length=255)
+    student_group = serializers.CharField(max_length=120)
+    student_gender = serializers.CharField(required=False, allow_blank=True)
+    year_or_semester = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
+
+    teacher = serializers.CharField(max_length=255)
+    teacher_degree = serializers.CharField(required=False, allow_blank=True)
+    teacher_gender = serializers.CharField(required=False, allow_blank=True)
+    teacher_role = serializers.CharField(required=False, allow_blank=True)
+
+    language = serializers.ChoiceField(choices=["ukr", "eng"])
+    page_numbers = serializers.BooleanField(default=False)
+    template_filename = serializers.CharField(required=False, allow_blank=True)
+
+    logo = serializers.ImageField(required=False, allow_null=True)
+
+    def validate(self, attrs):
+        discipline = attrs.get("discipline")
+        discipline_custom = attrs.get("discipline_custom")
+        if not discipline and not discipline_custom:
+            raise serializers.ValidationError("discipline or discipline_custom is required")
+        return attrs
+
+
+class TitleJobStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TitleDocumentJob
+        fields = ["id", "status", "progress", "created_at", "finished_at", "error_text"]
 
 
 class RegisterSerializer(serializers.Serializer):
