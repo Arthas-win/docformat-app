@@ -1,5 +1,11 @@
-app = "docformat-backend"
-primary_region = "waw"
+# fly.toml app configuration file generated for docformat-backend on 2026-02-21T17:10:19Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'docformat-backend'
+primary_region = 'ams'
+console_command = '/code/manage.py shell'
 
 [build]
   dockerfile = "Dockerfile"

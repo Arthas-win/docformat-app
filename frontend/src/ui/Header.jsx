@@ -7,10 +7,14 @@ function Header() {
       <nav>
         <ul className="flex flex-row justify-between items-center text-xl px-3 py-1 border border-stone-400/50 shadow">
           <Logo />
-          <NavLink to="/" className="text-md md:text-xl">
-            Home
-          </NavLink>
-          <NavLink to="/format/title">Fromat Title</NavLink>
+          <li>
+            <NavLink to="/" className="text-md md:text-xl">
+              Home
+            </NavLink>
+          </li>
+          <li>
+            <NavLink to="/format/title">Format Title</NavLink>
+          </li>
         </ul>
       </nav>
     </header>
