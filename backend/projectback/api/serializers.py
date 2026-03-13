@@ -74,6 +74,7 @@ class TitleGenerateSerializer(serializers.Serializer):
     student_gender = serializers.CharField(required=False, allow_blank=True)
     year_or_semester = serializers.CharField(required=False, allow_blank=True)
     city = serializers.CharField(required=False, allow_blank=True)
+    city_and_year = serializers.CharField(required=False, allow_blank=True)
 
     teacher = serializers.CharField(max_length=255)
     teacher_degree = serializers.CharField(required=False, allow_blank=True)
