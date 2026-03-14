@@ -119,12 +119,29 @@ function FormatTitle() {
 
       const formData = new FormData();
 
+      const isNulp = data.university === "Львівська політехніка";
+
+      const finalUniversity = isNulp
+        ? "МІНІСТЕРСТВО ОСВІТИ І НАУКИ УКРАЇНИ\nНАЦІОНАЛЬНИЙ УНІВЕРСИТЕТ «ЛЬВІВСЬКА ПОЛІТЕХНІКА»"
+        : data.university;
+
       Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
+        if (key !== "logo" && key !== "university") {
+          formData.append(key, value);
+        }
       });
+
+      formData.append("university", finalUniversity);
 
       if (logoFile) {
         formData.append("logo", logoFile);
+      } else if (isNulp) {
+        const staticLogoFile = await getStaticLogoFile();
+        formData.append("logo", staticLogoFile);
+      }
+
+      for (const pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
       }
 
       const req = await fetch(TITLE_GENERATE_URL, {
@@ -155,6 +172,13 @@ function FormatTitle() {
       setLoading(false);
     }
   }
+
+  async function getStaticLogoFile() {
+    const response = await fetch(Nulp_logo_ukr);
+    const blob = await response.blob();
+    return new File([blob], "Nulp_logo_ukr.jpg", { type: blob.type });
+  }
+
 
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6">
@@ -378,7 +402,7 @@ function FormatTitle() {
                       />
                     ) : logoUrl ? (
                       <img
-                        src={universityLogo}
+                        src={logoUrl}
                         alt="logo"
                         className="w-full h-full object-contain"
                       />
@@ -388,7 +412,7 @@ function FormatTitle() {
                       </div>
                     )}
                   </div>
-        
+
                   <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[40%] text-center">
                     <span className="mr-2 text-sm font-bold">З В І Т</span>
                   </div>
