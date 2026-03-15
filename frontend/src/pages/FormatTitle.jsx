@@ -334,11 +334,11 @@ function FormatTitle() {
                         Завантажити логотип
                       </span>
                       <span className="mt-1 text-xs text-slate-500">
-                        PNG / JPG / SVG
+                        PNG / JPG
                       </span>
                       <input
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg"
                         className="hidden"
                         onChange={handleLogoUpload}
                       />
