@@ -85,7 +85,8 @@ class TitleGenerateSerializer(serializers.Serializer):
     page_numbers = serializers.BooleanField(default=False)
     template_filename = serializers.CharField(required=False, allow_blank=True)
 
-    logo = serializers.ImageField(required=False, allow_null=True)
+    # FileField avoids hard dependency on Pillow during request parsing.
+    logo = serializers.FileField(required=False, allow_null=True)
 
     def validate(self, attrs):
         discipline = attrs.get("discipline")

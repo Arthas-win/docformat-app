@@ -192,12 +192,13 @@ class TitleGenerateView(APIView):
         )
 
         logo_path = None
-        if logo_file:
-            logo_name = f"title_jobs/logos/{job.id}_{logo_file.name}"
-            saved_path = default_storage.save(logo_name, logo_file)
-            logo_path = default_storage.path(saved_path)
 
         try:
+            if logo_file:
+                logo_name = f"title_jobs/logos/{job.id}_{logo_file.name}"
+                saved_path = default_storage.save(logo_name, logo_file)
+                logo_path = default_storage.path(saved_path)
+
             discipline_name = data.get("discipline") or data.get("discipline_custom", "")
             teacher_rank = " ".join(
                 value for value in [data.get("teacher_role", ""), data.get("teacher_degree", "")] if value
