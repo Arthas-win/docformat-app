@@ -2,6 +2,7 @@ import os
 from io import BytesIO
 
 from django.conf import settings
+from docx.image.exceptions import UnrecognizedImageError
 from docx.shared import Mm
 from docxtpl import DocxTemplate, InlineImage
 
@@ -13,7 +14,11 @@ def render_title_docx(template_path, context, logo_path=None, output_name=None):
     doc = DocxTemplate(template_path)
     if logo_path and os.path.exists(logo_path):
         context = dict(context)
-        context["logo"] = InlineImage(doc, logo_path, width=Mm(25))
+        try:
+            context["logo"] = InlineImage(doc, logo_path, width=Mm(25))
+        except UnrecognizedImageError:
+            # Do not fail full title generation because of an unreadable logo file.
+            pass
 
     doc.render(context)
 
