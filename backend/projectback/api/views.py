@@ -1,6 +1,9 @@
 import os
+import tempfile
 
 from pathlib import Path
+
+import logging
 
 from django.conf import settings
 from django.core.files import File
@@ -28,6 +31,8 @@ from .serializers import (
     TitleJobStatusSerializer,
     UniversitySerializer,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _normalize_payload(data):
@@ -184,6 +189,7 @@ class TitleGenerateView(APIView):
 
         logo_file = data.pop("logo", None)
         input_data = dict(data)
+        temporary_paths = []
 
         job = TitleDocumentJob.objects.create(
             status=TitleDocumentJob.Status.RUNNING,
@@ -197,7 +203,18 @@ class TitleGenerateView(APIView):
             if logo_file:
                 logo_name = f"title_jobs/logos/{job.id}_{logo_file.name}"
                 saved_path = default_storage.save(logo_name, logo_file)
-                logo_path = default_storage.path(saved_path)
+                try:
+                    logo_path = default_storage.path(saved_path)
+                except (NotImplementedError, AttributeError):
+                    # Some storages do not expose a filesystem path. Create a temp local file.
+                    with default_storage.open(saved_path, "rb") as stored_logo:
+                        suffix = Path(logo_file.name).suffix or ".bin"
+                        temp_logo = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+                        temp_logo.write(stored_logo.read())
+                        temp_logo.flush()
+                        temp_logo.close()
+                        logo_path = temp_logo.name
+                        temporary_paths.append(logo_path)
 
             discipline_name = data.get("discipline") or data.get("discipline_custom", "")
             teacher_rank = " ".join(
@@ -266,9 +283,17 @@ class TitleGenerateView(APIView):
             job.save(update_fields=["output_docx", "status", "progress", "finished_at"])
         except Exception as exc:
             job.status = TitleDocumentJob.Status.FAILED
-            job.error_text = str(exc)
+            logger.exception("Title generation failed for job %s", job.id)
+            error_text = str(exc).strip() or exc.__class__.__name__
+            job.error_text = error_text
             job.finished_at = timezone.now()
             job.save(update_fields=["status", "error_text", "finished_at"])
+        finally:
+            for temporary_path in temporary_paths:
+                try:
+                    os.remove(temporary_path)
+                except OSError:
+                    pass
 
         response = {"job_id": str(job.id)}
         if job.output_docx:
