@@ -268,12 +268,24 @@ class TitleGenerateView(APIView):
                 "tea_name_and_rank": teacher_label,
             }
 
-            output_path = render_title_docx(
-                template_path,
-                context,
-                logo_path=logo_path,
-                output_name=f"{job.id}.docx",
-            )
+            try:
+                output_path = render_title_docx(
+                    template_path,
+                    context,
+                    logo_path=logo_path,
+                    output_name=f"{job.id}.docx",
+                )
+            except Exception:
+                if not logo_path:
+                    raise
+                # Any logo-related rendering failure should not fail whole generation.
+                logger.exception("Logo render failed for job %s, retrying without logo", job.id)
+                output_path = render_title_docx(
+                    template_path,
+                    context,
+                    logo_path=None,
+                    output_name=f"{job.id}.docx",
+                )
 
             with open(output_path, "rb") as docx_file:
                 job.output_docx.save(os.path.basename(output_path), File(docx_file), save=False)
