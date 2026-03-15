@@ -5,6 +5,7 @@ from pathlib import Path
 
 import logging
 
+from docx.image.exceptions import UnrecognizedImageError
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import default_storage
@@ -268,12 +269,21 @@ class TitleGenerateView(APIView):
                 "tea_name_and_rank": teacher_label,
             }
 
-            output_path = render_title_docx(
-                template_path,
-                context,
-                logo_path=logo_path,
-                output_name=f"{job.id}.docx",
-            )
+            try:
+                output_path = render_title_docx(
+                    template_path,
+                    context,
+                    logo_path=logo_path,
+                    output_name=f"{job.id}.docx",
+                )
+            except UnrecognizedImageError:
+                # Retry without logo if uploaded file is not readable by docx image parser.
+                output_path = render_title_docx(
+                    template_path,
+                    context,
+                    logo_path=None,
+                    output_name=f"{job.id}.docx",
+                )
 
             with open(output_path, "rb") as docx_file:
                 job.output_docx.save(os.path.basename(output_path), File(docx_file), save=False)
