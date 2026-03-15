@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
+const API_BASE_URL = "https://docformat-backend.fly.dev";
+
 function FormatDocument() {
     const { register, handleSubmit } = useForm({
         defaultValues: {
@@ -56,13 +58,10 @@ function FormatDocument() {
 
             formData.append("file", fileObj);
 
-            const req = await fetch(
-                "https://docformat-backend.fly.dev/api/document/format/",
-                {
-                    method: "POST",
-                    body: formData,
-                }
-            );
+            const req = await fetch(`${API_BASE_URL}/api/document/format/`, {
+                method: "POST",
+                body: formData,
+            });
 
             if (!req.ok) {
                 throw new Error("Не вдалося відформатувати документ");

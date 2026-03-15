@@ -5,7 +5,6 @@ from pathlib import Path
 
 import logging
 
-from docx.image.exceptions import UnrecognizedImageError
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import default_storage
@@ -276,8 +275,11 @@ class TitleGenerateView(APIView):
                     logo_path=logo_path,
                     output_name=f"{job.id}.docx",
                 )
-            except UnrecognizedImageError:
-                # Retry without logo if uploaded file is not readable by docx image parser.
+            except Exception:
+                if not logo_path:
+                    raise
+                # Any logo-related rendering failure should not fail whole generation.
+                logger.exception("Logo render failed for job %s, retrying without logo", job.id)
                 output_path = render_title_docx(
                     template_path,
                     context,
