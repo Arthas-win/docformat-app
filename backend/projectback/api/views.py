@@ -82,7 +82,13 @@ def _run_document_format_job(job: DocumentJob, raw_data):
     page_numbers_raw = str(payload.get("pageNumbers", "true")).lower()
     page_numbers = page_numbers_raw in {"1", "true", "yes", "on"}
 
-    job.meta_json = payload
+    job.meta_json = {
+        "fontFamily": font_family,
+        "fontSize": font_size,
+        "lineSpacing": line_spacing,
+        "pageNumbers": page_numbers,
+        "outputFormat": output_format,
+    }
     job.status = DocumentJob.Status.PROCESSING
     job.progress = 20
     job.current_stage = "formatting"
