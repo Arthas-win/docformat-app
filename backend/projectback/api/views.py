@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from documents.models import DocumentJob, FormatPreset, TitleDocumentJob
-from documents.services import render_title_docx
+from documents.services import format_docx_except_first_page, render_title_docx
 from templates.models import Department, Discipline, Faculty, Teacher, TitleTemplate, University, WorkType
 
 from .serializers import (
@@ -347,6 +347,61 @@ class FormatRunView(APIView):
         job.current_stage = "formatting"
         job.save(update_fields=["meta_json", "status", "current_stage"])
         return Response({"job_id": job.id})
+
+
+class DocumentFormatView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"detail": "file is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_format = str(request.data.get("outputFormat", "docx")).lower()
+        if output_format != "docx":
+            return Response(
+                {"detail": "Only docx output is currently supported"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        font_family = str(request.data.get("fontFamily", "Times New Roman"))
+        try:
+            font_size = float(request.data.get("fontSize", 14))
+        except (TypeError, ValueError):
+            font_size = 14
+
+        try:
+            line_spacing = float(request.data.get("lineSpacing", 1.5))
+        except (TypeError, ValueError):
+            line_spacing = 1.5
+
+        page_numbers_raw = str(request.data.get("pageNumbers", "true")).lower()
+        page_numbers = page_numbers_raw in {"1", "true", "yes", "on"}
+
+        try:
+            output = format_docx_except_first_page(
+                upload,
+                font_family=font_family,
+                font_size=font_size,
+                line_spacing=line_spacing,
+                page_numbers=page_numbers,
+            )
+        except Exception:
+            logger.exception("Document format failed")
+            return Response(
+                {"detail": "Failed to format document"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        source_name = Path(upload.name).stem or "document"
+        filename = f"formatted-{source_name}.docx"
+        response = FileResponse(
+            output,
+            as_attachment=True,
+            filename=filename,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        return response
 
 
 class PresetListView(generics.ListAPIView):

@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import (
     DepartmentListView,
     DisciplineListView,
+    DocumentFormatView,
     FacultyListView,
     FormatRunView,
     FormatUploadView,
@@ -34,6 +35,8 @@ urlpatterns = [
     path("disciplines", DisciplineListView.as_view(), name="disciplines"),
     path("title/generate", TitleGenerateView.as_view(), name="title-generate"),
     path("title/generate/", TitleGenerateView.as_view(), name="title-generate-slash"),
+    path("document/format", DocumentFormatView.as_view(), name="document-format"),
+    path("document/format/", DocumentFormatView.as_view(), name="document-format-slash"),
     path("format/upload", FormatUploadView.as_view(), name="format-upload"),
     path("format/run", FormatRunView.as_view(), name="format-run"),
     path("presets", PresetListView.as_view(), name="presets"),
