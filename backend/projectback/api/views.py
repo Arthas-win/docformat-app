@@ -62,6 +62,73 @@ def _normalize_payload(data):
     return normalized
 
 
+def _run_document_format_job(job: DocumentJob, raw_data):
+    payload = _normalize_payload(raw_data)
+    output_format = str(payload.get("outputFormat", "docx")).lower()
+    if output_format != "docx":
+        raise ValueError("Only docx output is currently supported")
+
+    font_family = str(payload.get("fontFamily", "Times New Roman"))
+    try:
+        font_size = float(payload.get("fontSize", 14))
+    except (TypeError, ValueError):
+        font_size = 14
+
+    try:
+        line_spacing = float(payload.get("lineSpacing", 1.5))
+    except (TypeError, ValueError):
+        line_spacing = 1.5
+
+    page_numbers_raw = str(payload.get("pageNumbers", "true")).lower()
+    page_numbers = page_numbers_raw in {"1", "true", "yes", "on"}
+
+    job.meta_json = payload
+    job.status = DocumentJob.Status.PROCESSING
+    job.progress = 20
+    job.current_stage = "formatting"
+    job.error_text = ""
+    job.finished_at = None
+    job.save(
+        update_fields=[
+            "meta_json",
+            "status",
+            "progress",
+            "current_stage",
+            "error_text",
+            "finished_at",
+        ]
+    )
+
+    with job.input_file.open("rb") as source_file:
+        output = format_docx_except_first_page(
+            source_file,
+            font_family=font_family,
+            font_size=font_size,
+            line_spacing=line_spacing,
+            page_numbers=page_numbers,
+        )
+
+    source_name = Path(job.input_file.name).stem or "document"
+    output_filename = f"{source_name}-formatted.docx"
+    job.output_docx.save(output_filename, File(output), save=False)
+    job.status = DocumentJob.Status.DONE
+    job.progress = 100
+    job.current_stage = "done"
+    job.finished_at = timezone.now()
+    job.error_text = ""
+    job.save(
+        update_fields=[
+            "output_docx",
+            "status",
+            "progress",
+            "current_stage",
+            "finished_at",
+            "error_text",
+        ]
+    )
+    return output_format
+
+
 def _resolve_template_path(template, template_filename):
     candidate_paths = []
     default_template_path = Path(settings.BASE_DIR) / "appback" / "template" / "appback" / "template.docx"
@@ -328,6 +395,24 @@ class FormatUploadView(APIView):
             current_stage="queued",
             input_file=upload,
         )
+        try:
+            _run_document_format_job(job, request.data)
+        except Exception as exc:
+            logger.exception("Document format failed for job %s", job.id)
+            job.status = DocumentJob.Status.FAILED
+            job.progress = 5
+            job.current_stage = "failed"
+            job.finished_at = timezone.now()
+            job.error_text = str(exc) or exc.__class__.__name__
+            job.save(
+                update_fields=[
+                    "status",
+                    "progress",
+                    "current_stage",
+                    "finished_at",
+                    "error_text",
+                ]
+            )
         return Response({"job_id": job.id}, status=status.HTTP_201_CREATED)
 
 
@@ -342,10 +427,27 @@ class FormatRunView(APIView):
             job = DocumentJob.objects.get(id=job_id)
         except DocumentJob.DoesNotExist:
             return Response({"detail": "job not found"}, status=status.HTTP_404_NOT_FOUND)
-        job.meta_json = _normalize_payload(request.data)
-        job.status = DocumentJob.Status.PROCESSING
-        job.current_stage = "formatting"
-        job.save(update_fields=["meta_json", "status", "current_stage"])
+        if not job.input_file:
+            return Response({"detail": "job input file not found"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            _run_document_format_job(job, request.data)
+        except Exception as exc:
+            logger.exception("Document format failed for job %s", job.id)
+            job.status = DocumentJob.Status.FAILED
+            job.progress = 5
+            job.current_stage = "failed"
+            job.finished_at = timezone.now()
+            job.error_text = str(exc) or exc.__class__.__name__
+            job.save(
+                update_fields=[
+                    "status",
+                    "progress",
+                    "current_stage",
+                    "finished_at",
+                    "error_text",
+                ]
+            )
+            return Response({"job_id": job.id, "detail": job.error_text}, status=status.HTTP_400_BAD_REQUEST)
         return Response({"job_id": job.id})
 
 
