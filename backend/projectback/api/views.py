@@ -6,6 +6,7 @@ from pathlib import Path
 import logging
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
@@ -116,7 +117,10 @@ def _run_document_format_job(job: DocumentJob, raw_data):
 
     source_name = Path(job.input_file.name).stem or "document"
     output_filename = f"{source_name}-formatted.docx"
-    job.output_docx.save(output_filename, File(output), save=False)
+    output_bytes = output.getvalue()
+    if not output_bytes:
+        raise ValueError("Formatted output is empty")
+    job.output_docx.save(output_filename, ContentFile(output_bytes), save=False)
     job.status = DocumentJob.Status.DONE
     job.progress = 100
     job.current_stage = "done"
@@ -531,6 +535,7 @@ class JobDetailView(APIView):
         serializer = DocumentJobSerializer(job)
         payload = dict(serializer.data)
         payload["error"] = job.error_text
+        payload["file_url"] = job.output_docx.url if job.output_docx else ""
         return Response(payload)
 
 
@@ -573,7 +578,10 @@ class JobDownloadView(APIView):
             file_field = job.output_pdf
         if not file_field:
             raise Http404("file not available")
-        return FileResponse(file_field.open("rb"), as_attachment=True)
+        try:
+            return FileResponse(file_field.open("rb"), as_attachment=True)
+        except FileNotFoundError as exc:
+            raise Http404("file not available") from exc
 
 
 class TitleJobDownloadView(APIView):
