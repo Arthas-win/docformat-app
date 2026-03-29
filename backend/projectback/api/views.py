@@ -7,6 +7,7 @@ from pathlib import Path
 import logging
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.core.files import File
 from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
@@ -18,8 +19,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from documents.models import DocumentJob, FormatPreset, TitleDocumentJob
-from documents.services import render_title_docx, format_document_service
-from documents.services.title_renderer import LogoRenderError
+from documents.services import format_docx_except_first_page, render_title_docx
 from templates.models import Department, Discipline, Faculty, Teacher, TitleTemplate, University, WorkType
 
 from .serializers import (
@@ -63,6 +63,82 @@ def _normalize_payload(data):
         if source_key in normalized and target_key not in normalized:
             normalized[target_key] = normalized[source_key]
     return normalized
+
+
+def _run_document_format_job(job: DocumentJob, raw_data):
+    payload = _normalize_payload(raw_data)
+    output_format = str(payload.get("outputFormat", "docx")).lower()
+    if output_format != "docx":
+        raise ValueError("Only docx output is currently supported")
+
+    font_family = str(payload.get("fontFamily", "Times New Roman"))
+    try:
+        font_size = float(payload.get("fontSize", 14))
+    except (TypeError, ValueError):
+        font_size = 14
+
+    try:
+        line_spacing = float(payload.get("lineSpacing", 1.5))
+    except (TypeError, ValueError):
+        line_spacing = 1.5
+
+    page_numbers_raw = str(payload.get("pageNumbers", "true")).lower()
+    page_numbers = page_numbers_raw in {"1", "true", "yes", "on"}
+
+    job.meta_json = {
+        "fontFamily": font_family,
+        "fontSize": font_size,
+        "lineSpacing": line_spacing,
+        "pageNumbers": page_numbers,
+        "outputFormat": output_format,
+    }
+    job.status = DocumentJob.Status.PROCESSING
+    job.progress = 20
+    job.current_stage = "formatting"
+    job.error_text = ""
+    job.finished_at = None
+    job.save(
+        update_fields=[
+            "meta_json",
+            "status",
+            "progress",
+            "current_stage",
+            "error_text",
+            "finished_at",
+        ]
+    )
+
+    with job.input_file.open("rb") as source_file:
+        output = format_docx_except_first_page(
+            source_file,
+            font_family=font_family,
+            font_size=font_size,
+            line_spacing=line_spacing,
+            page_numbers=page_numbers,
+        )
+
+    source_name = Path(job.input_file.name).stem or "document"
+    output_filename = f"{source_name}-formatted.docx"
+    output_bytes = output.getvalue()
+    if not output_bytes:
+        raise ValueError("Formatted output is empty")
+    job.output_docx.save(output_filename, ContentFile(output_bytes), save=False)
+    job.status = DocumentJob.Status.DONE
+    job.progress = 100
+    job.current_stage = "done"
+    job.finished_at = timezone.now()
+    job.error_text = ""
+    job.save(
+        update_fields=[
+            "output_docx",
+            "status",
+            "progress",
+            "current_stage",
+            "finished_at",
+            "error_text",
+        ]
+    )
+    return output_format
 
 
 def _resolve_template_path(template, template_filename):
@@ -346,7 +422,25 @@ class FormatUploadView(APIView):
             current_stage="queued",
             input_file=upload,
         )
-        return Response({"job_id": job.pk}, status=status.HTTP_201_CREATED)
+        try:
+            _run_document_format_job(job, request.data)
+        except Exception as exc:
+            logger.exception("Document format failed for job %s", job.id)
+            job.status = DocumentJob.Status.FAILED
+            job.progress = 5
+            job.current_stage = "failed"
+            job.finished_at = timezone.now()
+            job.error_text = str(exc) or exc.__class__.__name__
+            job.save(
+                update_fields=[
+                    "status",
+                    "progress",
+                    "current_stage",
+                    "finished_at",
+                    "error_text",
+                ]
+            )
+        return Response({"job_id": job.id}, status=status.HTTP_201_CREATED)
 
 
 class FormatRunView(APIView):
@@ -360,37 +454,83 @@ class FormatRunView(APIView):
             job = DocumentJob.objects.get(id=job_id)
         except DocumentJob.DoesNotExist:
             return Response({"detail": "job not found"}, status=status.HTTP_404_NOT_FOUND)
-        
-        # Update job status and metadata
-        job.meta_json = _normalize_payload(request.data)
-        job.status = DocumentJob.Status.PROCESSING
-        job.current_stage = "formatting"
-        job.progress = 10
-        job.save(update_fields=["meta_json", "status", "current_stage", "progress"])
-        
+        if not job.input_file:
+            return Response({"detail": "job input file not found"}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            # Process the document formatting using the service
-            from documents.services import format_document_service
-            output_path = format_document_service(job)
-            
-            # Update job status to completed
-            job.progress = 100
-            job.current_stage = "completed"
-            job.status = DocumentJob.Status.DONE
-            job.save(update_fields=["progress", "current_stage", "status"])
-            
-        except Exception as e:
-            # Handle errors in document processing
+            _run_document_format_job(job, request.data)
+        except Exception as exc:
+            logger.exception("Document format failed for job %s", job.id)
             job.status = DocumentJob.Status.FAILED
-            job.error_text = str(e)
+            job.progress = 5
             job.current_stage = "failed"
-            job.save(update_fields=["status", "error_text", "current_stage"])
-            return Response(
-                {"detail": f"Document processing failed: {str(e)}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            job.finished_at = timezone.now()
+            job.error_text = str(exc) or exc.__class__.__name__
+            job.save(
+                update_fields=[
+                    "status",
+                    "progress",
+                    "current_stage",
+                    "finished_at",
+                    "error_text",
+                ]
             )
-        
-        return Response({"job_id": job.pk})
+            return Response({"job_id": job.id, "detail": job.error_text}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"job_id": job.id})
+
+
+class DocumentFormatView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"detail": "file is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        output_format = str(request.data.get("outputFormat", "docx")).lower()
+        if output_format != "docx":
+            return Response(
+                {"detail": "Only docx output is currently supported"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        font_family = str(request.data.get("fontFamily", "Times New Roman"))
+        try:
+            font_size = float(request.data.get("fontSize", 14))
+        except (TypeError, ValueError):
+            font_size = 14
+
+        try:
+            line_spacing = float(request.data.get("lineSpacing", 1.5))
+        except (TypeError, ValueError):
+            line_spacing = 1.5
+
+        page_numbers_raw = str(request.data.get("pageNumbers", "true")).lower()
+        page_numbers = page_numbers_raw in {"1", "true", "yes", "on"}
+
+        try:
+            output = format_docx_except_first_page(
+                upload,
+                font_family=font_family,
+                font_size=font_size,
+                line_spacing=line_spacing,
+                page_numbers=page_numbers,
+            )
+        except Exception:
+            logger.exception("Document format failed")
+            return Response(
+                {"detail": "Failed to format document"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        source_name = Path(upload.name).stem or "document"
+        filename = f"formatted-{source_name}.docx"
+        response = FileResponse(
+            output,
+            as_attachment=True,
+            filename=filename,
+            content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )
+        return response
 
 
 class PresetListView(generics.ListAPIView):
@@ -412,6 +552,7 @@ class JobDetailView(APIView):
         serializer = DocumentJobSerializer(job)
         payload = dict(serializer.data)
         payload["error"] = job.error_text
+        payload["file_url"] = job.output_docx.url if job.output_docx else ""
         return Response(payload)
 
 
@@ -454,7 +595,10 @@ class JobDownloadView(APIView):
             file_field = job.output_pdf
         if not file_field:
             raise Http404("file not available")
-        return FileResponse(file_field.open("rb"), as_attachment=True)
+        try:
+            return FileResponse(file_field.open("rb"), as_attachment=True)
+        except FileNotFoundError as exc:
+            raise Http404("file not available") from exc
 
 
 class TitleJobDownloadView(APIView):
