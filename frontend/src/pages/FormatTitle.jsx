@@ -426,8 +426,8 @@ function FormatTitle() {
               </div>
 
               {/* Звичайне прев'ю (видно тільки на великих екранах) */}
-              <div className="hidden xl:flex w-full overflow-x-auto rounded-2xl bg-slate-100 p-2 sm:p-4 justify-center">
-                <div className="@container relative shrink-0 w-150 aspect-[1/1.4142] bg-white shadow-xl overflow-hidden text-[2cqi]">
+              <div className="hidden xl:flex justify-center overflow-auto rounded-2xl bg-slate-100 p-2 sm:p-4">
+                <div className="relative w-full max-w-205 aspect-[1/1.414] bg-white shadow-xl overflow-hidden text-sm">
                   <div
                     className={`${paperInputStyles} top-[5%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase whitespace-pre-line`}
                   >
@@ -439,7 +439,7 @@ function FormatTitle() {
                     readOnly
                     value={formValues.faculty || ""}
                     placeholder="faculty"
-                    className={`${paperInputStyles} top-[10%] right-[10%] text-right w-[40%] text-[2cqi]`}
+                    className={`${paperInputStyles} top-[10%] right-[10%] text-right w-[40%]`}
                   />
 
                   <input
@@ -447,10 +447,10 @@ function FormatTitle() {
                     readOnly
                     value={formValues.department || ""}
                     placeholder="department"
-                    className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%] text-[2cqi]`}
+                    className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%]`}
                   />
 
-                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-[22%] aspect-square border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
+                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-65 h-65 border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
                     {universityLogo ? (
                       <img
                         src={universityLogo}
@@ -463,16 +463,14 @@ function FormatTitle() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-[1.5cqi] text-slate-400">
+                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
                         logo
                       </div>
                     )}
                   </div>
 
                   <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[40%] text-center">
-                    <span className="mr-2 text-[2.75cqi] font-bold tracking-widest">
-                      З В І Т
-                    </span>
+                    <span className="mr-2 text-sm font-bold">З В І Т</span>
                   </div>
 
                   <input
@@ -480,34 +478,34 @@ function FormatTitle() {
                     readOnly
                     value={formValues.workType || ""}
                     placeholder="work_type"
-                    className={`${paperInputStyles} top-[45%] left-1/2 -translate-x-1/2 text-center w-[50%] text-[2cqi]`}
+                    className={`${paperInputStyles} top-[45%] left-1/2 -translate-x-1/2 text-center w-[50%]`}
                   />
 
                   <div className="absolute top-[48%] left-1/2 -translate-x-1/2 w-[70%] text-center">
-                    <span className="mr-[1cqi] font-bold">з дисципліни</span>
+                    <span className="mr-2 font-bold">з дисципліни</span>
                     <span>{formValues.discipline || "discipline"}</span>
                   </div>
 
                   <div className="absolute top-[51%] left-1/2 -translate-x-1/2 w-[80%] text-center">
-                    <span className="mr-[1cqi] font-bold">на тему:</span>
+                    <span className="mr-2 font-bold">на тему:</span>
                     <span>{formValues.topic || "topic"}</span>
                   </div>
 
                   <div className="absolute top-[54%] left-1/2 -translate-x-1/2 w-[40%] text-center">
-                    <span className="mr-[1cqi] font-semibold">Варіант №</span>
+                    <span className="mr-2 font-semibold">Варіант №</span>
                     <span className="font-semibold">
                       {formValues.variant || "variant"}
                     </span>
                   </div>
 
-                  <div className="absolute top-[65%] right-[5%] w-[42%] text-left flex flex-col gap-[0.5cqi] pl-[2cqi]">
+                  <div className="absolute top-[65%] right-[0%] w-[33%] text-left flex flex-col gap-1 pl-4">
                     <div className="font-bold">Виконав(-ла):</div>
                     <div>студент(-ка) групи {formValues.group || "group"}</div>
                     <div className="font-semibold">
                       {formValues.studentFullName || "student_full_name"}
                     </div>
 
-                    <div className="mt-[2cqi] font-bold">Прийняв(-ла):</div>
+                    <div className="mt-6 font-bold">Прийняв(-ла):</div>
                     <div>
                       {formValues.teacherDegree || "teacher_degree"}{" "}
                       {formValues.teacherRole || "teacher_role"}
@@ -522,7 +520,7 @@ function FormatTitle() {
                     readOnly
                     value={formValues.cityAndYear || ""}
                     placeholder="city_and_year"
-                    className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold text-[2cqi]`}
+                    className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold`}
                   />
                 </div>
               </div>
