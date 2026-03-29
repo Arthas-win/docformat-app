@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-const API_BASE_URL = "https://docformat-backend.fly.dev";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 function FormatDocument() {
   const { register, handleSubmit } = useForm({
@@ -92,28 +93,63 @@ function FormatDocument() {
       setLoading(true);
       setResultReady(false);
 
+      // Step 1: Upload the file
       const formData = new FormData();
-
       Object.entries(data).forEach(([key, value]) => {
         formData.append(key, value);
       });
-
       formData.append("file", fileObj);
 
-      const req = await fetch(`${API_BASE_URL}/api/format/upload`, {
+      const uploadReq = await fetch(`${API_BASE_URL}/api/format/upload`, {
         method: "POST",
         body: formData,
       });
 
-      if (!req.ok) {
+      if (!uploadReq.ok) {
         throw new Error("Не вдалося завантажити документ для форматування");
       }
 
-      // Get the response with job ID
-      const result = await req.json();
-      const jobId = result.job_id;
+      const uploadResult = await uploadReq.json();
+      const jobId = uploadResult.job_id;
 
-      // Download the processed file using the job ID
+      // Step 2: Trigger the formatting process with the job ID and formatting options
+      const formatReq = await fetch(`${API_BASE_URL}/api/format/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          job_id: jobId,
+          ...data,
+        }),
+      });
+
+      if (!formatReq.ok) {
+        throw new Error("Не вдалося запустити процес форматування");
+      }
+
+      // Step 3: Poll for job completion
+      let jobCompleted = false;
+      while (!jobCompleted) {
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Wait 1 second before checking again
+
+        const jobStatusReq = await fetch(`${API_BASE_URL}/api/jobs/${jobId}`);
+        if (!jobStatusReq.ok) {
+          throw new Error("Не вдалося перевірити статус завдання");
+        }
+
+        const jobStatus = await jobStatusReq.json();
+
+        if (jobStatus.status === "done") {
+          jobCompleted = true;
+        } else if (jobStatus.status === "failed") {
+          throw new Error(
+            `Процес форматування завершився помилкою: ${jobStatus.error || "Unknown error"}`,
+          );
+        }
+      }
+
+      // Step 4: Download the processed file
       const downloadReq = await fetch(
         `${API_BASE_URL}/api/jobs/${jobId}/download?format=${data.outputFormat}`,
       );
@@ -139,7 +175,7 @@ function FormatDocument() {
       setResultReady(true);
     } catch (error) {
       console.error(error.message);
-      alert("Сталася помилка при форматуванні");
+      alert(`Сталася помилка при форматуванні: ${error.message}`);
     } finally {
       setLoading(false);
     }
