@@ -1,5 +1,6 @@
 import os
 import tempfile
+from typing import Any, cast
 
 from pathlib import Path
 
@@ -11,12 +12,14 @@ from django.core.files.storage import default_storage
 from django.http import FileResponse, Http404
 from django.utils import timezone
 from rest_framework import generics, permissions, status
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from documents.models import DocumentJob, FormatPreset, TitleDocumentJob
-from documents.services import render_title_docx
+from documents.services import render_title_docx, format_document_service
+from documents.services.title_renderer import LogoRenderError
 from templates.models import Department, Discipline, Faculty, Teacher, TitleTemplate, University, WorkType
 
 from .serializers import (
@@ -116,7 +119,8 @@ class UniversityListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = University.objects.all().order_by("name")
-        search = self.request.query_params.get("search")
+        request = cast(Request, self.request)
+        search = request.query_params.get("search")
         if search:
             queryset = queryset.filter(name__icontains=search)
         return queryset
@@ -128,7 +132,8 @@ class FacultyListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Faculty.objects.all().order_by("name")
-        university_id = self.request.query_params.get("university_id")
+        request = cast(Request, self.request)
+        university_id = request.query_params.get("university_id")
         if university_id:
             queryset = queryset.filter(university_id=university_id)
         return queryset
@@ -140,8 +145,9 @@ class DepartmentListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Department.objects.all().order_by("name")
-        faculty_id = self.request.query_params.get("faculty_id")
-        university_id = self.request.query_params.get("university_id")
+        request = cast(Request, self.request)
+        faculty_id = request.query_params.get("faculty_id")
+        university_id = request.query_params.get("university_id")
         if faculty_id:
             queryset = queryset.filter(faculty_id=faculty_id)
         if university_id:
@@ -155,10 +161,11 @@ class TeacherListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Teacher.objects.all().order_by("full_name")
-        department_id = self.request.query_params.get("department_id")
+        request = cast(Request, self.request)
+        department_id = request.query_params.get("department_id")
         if department_id:
             queryset = queryset.filter(department_id=department_id)
-        search = self.request.query_params.get("search")
+        search = request.query_params.get("search")
         if search:
             queryset = queryset.filter(full_name__icontains=search)
         return queryset
@@ -170,10 +177,11 @@ class DisciplineListView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = Discipline.objects.all().order_by("name")
-        department_id = self.request.query_params.get("department_id")
+        request = cast(Request, self.request)
+        department_id = request.query_params.get("department_id")
         if department_id:
             queryset = queryset.filter(department_id=department_id)
-        search = self.request.query_params.get("search")
+        search = request.query_params.get("search")
         if search:
             queryset = queryset.filter(name__icontains=search)
         return queryset
@@ -185,7 +193,7 @@ class TitleGenerateView(APIView):
     def post(self, request):
         serializer = TitleGenerateSerializer(data=_normalize_payload(request.data))
         serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
+        data = cast(dict[str, Any], serializer.validated_data)
 
         logo_file = data.pop("logo", None)
         input_data = dict(data)
@@ -275,17 +283,20 @@ class TitleGenerateView(APIView):
                     logo_path=logo_path,
                     output_name=f"{job.id}.docx",
                 )
-            except Exception:
+            except LogoRenderError:
                 if not logo_path:
                     raise
-                # Any logo-related rendering failure should not fail whole generation.
-                logger.exception("Logo render failed for job %s, retrying without logo", job.id)
+                # Only retry without logo for logo-specific errors
+                logger.warning("Logo render failed for job %s, retrying without logo", job.id)
                 output_path = render_title_docx(
                     template_path,
                     context,
                     logo_path=None,
                     output_name=f"{job.id}.docx",
                 )
+            except Exception:
+                # For any other error, fail immediately without degrading silently
+                raise
 
             with open(output_path, "rb") as docx_file:
                 job.output_docx.save(os.path.basename(output_path), File(docx_file), save=False)
@@ -307,6 +318,13 @@ class TitleGenerateView(APIView):
                 except OSError:
                     pass
 
+        if job.status == TitleDocumentJob.Status.FAILED:
+            error_detail = job.error_text or "Job failed during processing"
+            return Response(
+                {"detail": error_detail},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
         response = {"job_id": str(job.id)}
         if job.output_docx:
             response["file_url"] = job.output_docx.url
@@ -328,7 +346,7 @@ class FormatUploadView(APIView):
             current_stage="queued",
             input_file=upload,
         )
-        return Response({"job_id": job.id}, status=status.HTTP_201_CREATED)
+        return Response({"job_id": job.pk}, status=status.HTTP_201_CREATED)
 
 
 class FormatRunView(APIView):
@@ -342,11 +360,37 @@ class FormatRunView(APIView):
             job = DocumentJob.objects.get(id=job_id)
         except DocumentJob.DoesNotExist:
             return Response({"detail": "job not found"}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Update job status and metadata
         job.meta_json = _normalize_payload(request.data)
         job.status = DocumentJob.Status.PROCESSING
         job.current_stage = "formatting"
-        job.save(update_fields=["meta_json", "status", "current_stage"])
-        return Response({"job_id": job.id})
+        job.progress = 10
+        job.save(update_fields=["meta_json", "status", "current_stage", "progress"])
+        
+        try:
+            # Process the document formatting using the service
+            from documents.services import format_document_service
+            output_path = format_document_service(job)
+            
+            # Update job status to completed
+            job.progress = 100
+            job.current_stage = "completed"
+            job.status = DocumentJob.Status.DONE
+            job.save(update_fields=["progress", "current_stage", "status"])
+            
+        except Exception as e:
+            # Handle errors in document processing
+            job.status = DocumentJob.Status.FAILED
+            job.error_text = str(e)
+            job.current_stage = "failed"
+            job.save(update_fields=["status", "error_text", "current_stage"])
+            return Response(
+                {"detail": f"Document processing failed: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+        return Response({"job_id": job.pk})
 
 
 class PresetListView(generics.ListAPIView):
@@ -438,11 +482,11 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        refresh = RefreshToken.for_user(user)
+        user = cast(Any, serializer.save())
+        refresh = cast(Any, RefreshToken.for_user(user))
         return Response(
             {
-                "id": user.id,
+                "id": user.pk,
                 "username": user.username,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),

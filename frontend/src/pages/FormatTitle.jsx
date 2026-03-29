@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { paperInputStyles } from "../styles/styles";
-import Nulp_logo_ukr from "../assets/Nulp_logo_ukr.jpg"
+import Nulp_logo_ukr from "../assets/Nulp_logo_ukr.jpg";
 
-const API_BASE_URL = "https://docformat-backend.fly.dev";
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const TITLE_GENERATE_URL = `${API_BASE_URL}/api/title/generate/`;
 const TITLE_JOB_POLL_INTERVAL_MS = 1000;
 const TITLE_JOB_POLL_ATTEMPTS = 20;
@@ -56,10 +57,7 @@ function FormatTitle() {
   const normalizedUniversity = formValues.university.trim().toLowerCase();
 
   const universityLogo =
-    normalizedUniversity === "львівська політехніка"
-      ? Nulp_logo_ukr
-      : null;
-
+    normalizedUniversity === "львівська політехніка" ? Nulp_logo_ukr : null;
 
   const universityText = {
     "Львівська політехніка":
@@ -80,7 +78,9 @@ function FormatTitle() {
         return job;
       }
       if (job.status === "FAILED") {
-        throw new Error(job.error_text || "Генерація документа завершилась з помилкою");
+        throw new Error(
+          job.error_text || "Генерація документа завершилась з помилкою",
+        );
       }
 
       await new Promise((resolve) => {
@@ -93,7 +93,7 @@ function FormatTitle() {
 
   const downloadTitleFile = async (jobId) => {
     const downloadResponse = await fetch(
-      `${API_BASE_URL}/api/jobs/${jobId}/download/`
+      `${API_BASE_URL}/api/jobs/${jobId}/download/`,
     );
 
     if (!downloadResponse.ok) {
@@ -150,7 +150,30 @@ function FormatTitle() {
       });
 
       if (!req.ok) {
-        throw new Error("Помилка при відправці форми");
+        let details = "";
+        try {
+          const errorBody = await req.json();
+          if (typeof errorBody === "string") {
+            details = errorBody;
+          } else if (errorBody?.detail) {
+            details = errorBody.detail;
+          } else {
+            details = Object.entries(errorBody || {})
+              .map(([key, value]) => {
+                const message = Array.isArray(value)
+                  ? value.join(", ")
+                  : String(value);
+                return `${key}: ${message}`;
+              })
+              .join("; ");
+          }
+        } catch {
+          details = "";
+        }
+
+        throw new Error(
+          details || `Помилка при відправці форми (HTTP ${req.status})`,
+        );
       }
 
       const result = await req.json();
@@ -179,7 +202,6 @@ function FormatTitle() {
     return new File([blob], "Nulp_logo_ukr.jpg", { type: blob.type });
   }
 
-
   return (
     <div className="min-h-screen bg-slate-100 px-4 py-6">
       <div className="mx-auto max-w-7xl">
@@ -188,7 +210,8 @@ function FormatTitle() {
             Створити титулку
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Заповни поля зліва, а справа одразу дивись прев’ю титульної сторінки.
+            Заповни поля зліва, а справа одразу дивись прев’ю титульної
+            сторінки.
           </p>
         </div>
 
@@ -206,8 +229,12 @@ function FormatTitle() {
                       {...register("university")}
                     >
                       <option value="">Університет</option>
-                      <option value="Львівська політехніка">Львівська політехніка</option>
-                      <option value="Львіський національний університет ім. Івана Франка">Львіський національний університет ім. Івана Франка</option>
+                      <option value="Львівська політехніка">
+                        Львівська політехніка
+                      </option>
+                      <option value="Львівський національний університет ім. Івана Франка">
+                        Львівський національний університет ім. Івана Франка
+                      </option>
                       <option value="...">Незабаром буде більше :3</option>
                     </select>
 
@@ -253,9 +280,13 @@ function FormatTitle() {
                       {...register("workType")}
                     >
                       <option value="">Тип роботи</option>
-                      <option value="до лабораторної роботи">Лабораторна робота</option>
+                      <option value="до лабораторної роботи">
+                        Лабораторна робота
+                      </option>
                       <option value="до курсової робота">Курсова робота</option>
-                      <option value="до бакалаврської роботи">Бакалаврська робота</option>
+                      <option value="до бакалаврської роботи">
+                        Бакалаврська робота
+                      </option>
                     </select>
 
                     <input
@@ -370,8 +401,7 @@ function FormatTitle() {
               </div>
 
               <div className="flex justify-center overflow-auto rounded-2xl bg-slate-100 p-4">
-                <div className="relative w-full max-w-[820px] aspect-[1/1.414] bg-white shadow-xl overflow-hidden text-sm sm:text-base">
-
+                <div className="relative w-full max-w-205 aspect-[1/1.414] bg-white shadow-xl overflow-hidden text-sm sm:text-base">
                   <div
                     className={`${paperInputStyles} top-[5%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase whitespace-pre-line`}
                   >
@@ -427,16 +457,12 @@ function FormatTitle() {
 
                   <div className="absolute top-[48%] left-1/2 -translate-x-1/2 w-[70%] text-center">
                     <span className="mr-2 font-bold">з дисципліни</span>
-                    <span>
-                      {formValues.discipline || "discipline"}
-                    </span>
+                    <span>{formValues.discipline || "discipline"}</span>
                   </div>
 
                   <div className="absolute top-[51%] left-1/2 -translate-x-1/2 w-[80%] text-center">
                     <span className="mr-2 font-bold">на тему:</span>
-                    <span>
-                      {formValues.topic || "topic"}
-                    </span>
+                    <span>{formValues.topic || "topic"}</span>
                   </div>
 
                   <div className="absolute top-[54%] left-1/2 -translate-x-1/2 w-[40%] text-center">
@@ -448,9 +474,7 @@ function FormatTitle() {
 
                   <div className="absolute top-[65%] right-[0%] w-[33%] text-left flex flex-col gap-1 pl-4">
                     <div className="font-bold">Виконав(-ла):</div>
-                    <div>
-                      студент(-ка) групи {formValues.group || "group"}
-                    </div>
+                    <div>студент(-ка) групи {formValues.group || "group"}</div>
                     <div className="font-semibold">
                       {formValues.studentFullName || "student_full_name"}
                     </div>
