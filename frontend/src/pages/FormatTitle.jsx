@@ -10,6 +10,7 @@ const TITLE_JOB_POLL_INTERVAL_MS = 1000;
 const TITLE_JOB_POLL_ATTEMPTS = 20;
 
 function FormatTitle() {
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const { register, handleSubmit, watch } = useForm({
     defaultValues: {
       university: "",
@@ -210,7 +211,7 @@ function FormatTitle() {
             Створити титулку
           </h1>
           <p className="mt-2 text-sm text-slate-600">
-            Заповни поля зліва, а справа одразу дивись прев’ю титульної
+            Заповни поля зліва, а справа одразу дивись прев'ю титульної
             сторінки.
           </p>
         </div>
@@ -398,10 +399,35 @@ function FormatTitle() {
                 <h2 className="text-lg font-semibold text-slate-900">
                   Вигляд готової титулки
                 </h2>
+                <button
+                  type="button"
+                  onClick={() => setIsPreviewModalOpen(true)}
+                  className="xl:hidden flex items-center gap-2 rounded-lg bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-100 transition-colors"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                    className="w-4 h-4"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M13.28 11.47a.75.75 0 0 1 1.06 0l2.25 2.25a.75.75 0 0 1 0 1.06l-2.25 2.25a.75.75 0 1 1-1.06-1.06l.97-.97H10.5a.75.75 0 0 1 0-1.5h3.75l-.97-.97a.75.75 0 0 1 0-1.06ZM6.72 8.53a.75.75 0 0 1-1.06 0L3.41 6.28a.75.75 0 0 1 0-1.06C3.55 5.08 3.7 4.93 3.94 4.78a.75.75 0 0 1 1.06 0l.97.97H9.5a.75.75 0 0 1 0 1.5H5.75l.97.97a.75.75 0 0 1 0 1.06Z"
+                      clipRule="evenodd"
+                    />
+                    <path
+                      fillRule="evenodd"
+                      d="M4.75 1.5a.75.75 0 0 0-.75.75v1.5a.75.75 0 0 0 1.5 0v-1.5H7a.75.75 0 0 0 0-1.5H4.75Zm10.5 0a.75.75 0 0 0-.75.75v1.5A.75.75 0 0 0 16 3h1.5a.75.75 0 0 0 0-1.5h-2.25Zm0 17a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5h-2.25a.75.75 0 0 1-.75-.75Zm-10.5 0a.75.75 0 0 1-.75-.75v-1.5a.75.75 0 0 1 1.5 0v1.5H7a.75.75 0 0 1 0 1.5H4.75Z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  На весь екран
+                </button>
               </div>
 
-              <div className="flex justify-center overflow-auto rounded-2xl bg-slate-100 p-4">
-                <div className="relative w-full max-w-205 aspect-[1/1.414] bg-white shadow-xl overflow-hidden text-sm sm:text-base">
+              {/* Звичайне прев'ю (видно тільки на великих екранах) */}
+              <div className="hidden xl:flex w-full overflow-x-auto rounded-2xl bg-slate-100 p-2 sm:p-4 justify-center">
+                <div className="@container relative shrink-0 w-150 aspect-[1/1.4142] bg-white shadow-xl overflow-hidden text-[2cqi]">
                   <div
                     className={`${paperInputStyles} top-[5%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase whitespace-pre-line`}
                   >
@@ -413,7 +439,7 @@ function FormatTitle() {
                     readOnly
                     value={formValues.faculty || ""}
                     placeholder="faculty"
-                    className={`${paperInputStyles} top-[10%] right-[10%] text-right w-[40%]`}
+                    className={`${paperInputStyles} top-[10%] right-[10%] text-right w-[40%] text-[2cqi]`}
                   />
 
                   <input
@@ -421,10 +447,10 @@ function FormatTitle() {
                     readOnly
                     value={formValues.department || ""}
                     placeholder="department"
-                    className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%]`}
+                    className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%] text-[2cqi]`}
                   />
 
-                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-65 h-65 border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
+                  <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-[22%] aspect-square border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
                     {universityLogo ? (
                       <img
                         src={universityLogo}
@@ -437,14 +463,16 @@ function FormatTitle() {
                         className="w-full h-full object-contain"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">
+                      <div className="flex h-full w-full items-center justify-center text-[1.5cqi] text-slate-400">
                         logo
                       </div>
                     )}
                   </div>
 
                   <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[40%] text-center">
-                    <span className="mr-2 text-sm font-bold">З В І Т</span>
+                    <span className="mr-2 text-[2.75cqi] font-bold tracking-widest">
+                      З В І Т
+                    </span>
                   </div>
 
                   <input
@@ -452,34 +480,34 @@ function FormatTitle() {
                     readOnly
                     value={formValues.workType || ""}
                     placeholder="work_type"
-                    className={`${paperInputStyles} top-[45%] left-1/2 -translate-x-1/2 text-center w-[50%]`}
+                    className={`${paperInputStyles} top-[45%] left-1/2 -translate-x-1/2 text-center w-[50%] text-[2cqi]`}
                   />
 
                   <div className="absolute top-[48%] left-1/2 -translate-x-1/2 w-[70%] text-center">
-                    <span className="mr-2 font-bold">з дисципліни</span>
+                    <span className="mr-[1cqi] font-bold">з дисципліни</span>
                     <span>{formValues.discipline || "discipline"}</span>
                   </div>
 
                   <div className="absolute top-[51%] left-1/2 -translate-x-1/2 w-[80%] text-center">
-                    <span className="mr-2 font-bold">на тему:</span>
+                    <span className="mr-[1cqi] font-bold">на тему:</span>
                     <span>{formValues.topic || "topic"}</span>
                   </div>
 
                   <div className="absolute top-[54%] left-1/2 -translate-x-1/2 w-[40%] text-center">
-                    <span className="mr-2 font-semibold">Варіант №</span>
+                    <span className="mr-[1cqi] font-semibold">Варіант №</span>
                     <span className="font-semibold">
                       {formValues.variant || "variant"}
                     </span>
                   </div>
 
-                  <div className="absolute top-[65%] right-[0%] w-[33%] text-left flex flex-col gap-1 pl-4">
+                  <div className="absolute top-[65%] right-[5%] w-[42%] text-left flex flex-col gap-[0.5cqi] pl-[2cqi]">
                     <div className="font-bold">Виконав(-ла):</div>
                     <div>студент(-ка) групи {formValues.group || "group"}</div>
                     <div className="font-semibold">
                       {formValues.studentFullName || "student_full_name"}
                     </div>
 
-                    <div className="mt-6 font-bold">Прийняв(-ла):</div>
+                    <div className="mt-[2cqi] font-bold">Прийняв(-ла):</div>
                     <div>
                       {formValues.teacherDegree || "teacher_degree"}{" "}
                       {formValues.teacherRole || "teacher_role"}
@@ -494,14 +522,170 @@ function FormatTitle() {
                     readOnly
                     value={formValues.cityAndYear || ""}
                     placeholder="city_and_year"
-                    className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold`}
+                    className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold text-[2cqi]`}
                   />
                 </div>
+              </div>
+
+              {/* Прев'ю на мобільних пристроях (кнопка-заглушка замість величезного скролу) */}
+              <div
+                className="xl:hidden flex flex-col items-center justify-center rounded-2xl bg-slate-100 p-8 border-2 border-dashed border-slate-300 cursor-pointer hover:bg-slate-200 transition"
+                onClick={() => setIsPreviewModalOpen(true)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="w-12 h-12 text-slate-400 mb-3"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m6.75 12H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+                  />
+                </svg>
+                <p className="text-center font-medium text-slate-700">
+                  Натисни, щоб подивитися прев'ю
+                </p>
+                <p className="text-center text-sm text-slate-500 mt-1">
+                  Відкриється на весь екран
+                </p>
               </div>
             </div>
           </div>
         </form>
       </div>
+
+      {/* Модальне вікно для прев'ю титулки на мобільних */}
+      {isPreviewModalOpen && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/90 backdrop-blur-sm p-4 xl:hidden">
+          <div className="flex justify-between items-center bg-white rounded-t-2xl px-4 py-3 border-b">
+            <h3 className="font-semibold text-slate-900">Прев'ю титулки</h3>
+            <button
+              onClick={() => setIsPreviewModalOpen(false)}
+              className="p-2 rounded-full hover:bg-slate-100 text-slate-500 transition"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18 18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <div className="flex-1 bg-slate-100 overflow-auto rounded-b-2xl p-4 flex justify-center">
+            <div className="@container relative shrink-0 w-150 aspect-[1/1.4142] bg-white shadow-xl overflow-hidden text-[2cqi] origin-top">
+              <div
+                className={`${paperInputStyles} top-[5%] left-1/2 -translate-x-1/2 text-center w-[80%] font-bold uppercase whitespace-pre-line`}
+              >
+                {universityTitle ? universityTitle : formValues.university}
+              </div>
+
+              <input
+                type="text"
+                readOnly
+                value={formValues.faculty || ""}
+                placeholder="faculty"
+                className={`${paperInputStyles} top-[10%] right-[10%] text-right w-[40%] text-[2cqi]`}
+              />
+
+              <input
+                type="text"
+                readOnly
+                value={formValues.department || ""}
+                placeholder="department"
+                className={`${paperInputStyles} top-[13%] right-[10%] text-right w-[40%] text-[2cqi]`}
+              />
+
+              <div className="absolute top-[17%] left-1/2 -translate-x-1/2 w-[22%] aspect-square border-2 border-dashed border-gray-300 rounded bg-white overflow-hidden">
+                {universityLogo ? (
+                  <img
+                    src={universityLogo}
+                    className="w-full h-full object-contain"
+                  />
+                ) : logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="logo"
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-[1.5cqi] text-slate-400">
+                    logo
+                  </div>
+                )}
+              </div>
+
+              <div className="absolute top-[42%] left-1/2 -translate-x-1/2 w-[40%] text-center">
+                <span className="mr-2 text-[2.75cqi] font-bold tracking-widest">
+                  З В І Т
+                </span>
+              </div>
+
+              <input
+                type="text"
+                readOnly
+                value={formValues.workType || ""}
+                placeholder="work_type"
+                className={`${paperInputStyles} top-[45%] left-1/2 -translate-x-1/2 text-center w-[50%] text-[2cqi]`}
+              />
+
+              <div className="absolute top-[48%] left-1/2 -translate-x-1/2 w-[70%] text-center">
+                <span className="mr-[1cqi] font-bold">з дисципліни</span>
+                <span>{formValues.discipline || "discipline"}</span>
+              </div>
+
+              <div className="absolute top-[51%] left-1/2 -translate-x-1/2 w-[80%] text-center">
+                <span className="mr-[1cqi] font-bold">на тему:</span>
+                <span>{formValues.topic || "topic"}</span>
+              </div>
+
+              <div className="absolute top-[54%] left-1/2 -translate-x-1/2 w-[40%] text-center">
+                <span className="mr-[1cqi] font-semibold">Варіант №</span>
+                <span className="font-semibold">
+                  {formValues.variant || "variant"}
+                </span>
+              </div>
+
+              <div className="absolute top-[65%] right-[5%] w-[42%] text-left flex flex-col gap-[0.5cqi] pl-[2cqi]">
+                <div className="font-bold">Виконав(-ла):</div>
+                <div>студент(-ка) групи {formValues.group || "group"}</div>
+                <div className="font-semibold">
+                  {formValues.studentFullName || "student_full_name"}
+                </div>
+
+                <div className="mt-[2cqi] font-bold">Прийняв(-ла):</div>
+                <div>
+                  {formValues.teacherDegree || "teacher_degree"}{" "}
+                  {formValues.teacherRole || "teacher_role"}
+                </div>
+                <div className="font-semibold">
+                  {formValues.teacherName || "teacher_name"}
+                </div>
+              </div>
+
+              <input
+                type="text"
+                readOnly
+                value={formValues.cityAndYear || ""}
+                placeholder="city_and_year"
+                className={`${paperInputStyles} bottom-[5%] left-1/2 -translate-x-1/2 text-center w-[40%] font-semibold text-[2cqi]`}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
